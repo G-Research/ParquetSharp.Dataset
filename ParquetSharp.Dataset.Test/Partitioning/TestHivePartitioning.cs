@@ -13,7 +13,7 @@ public class TestHivePartitioning
         var partitioningSchema = new Apache.Arrow.Schema.Builder().Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(System.Array.Empty<string>());
+        var subsetData = partitioning.Parse(System.Array.Empty<string>()).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(0));
@@ -27,7 +27,7 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(new [] {"x=3"});
+        var subsetData = partitioning.Parse(new [] {"x=3"}).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -45,7 +45,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         // Should respect type even if this value can be interpreted as int
-        var subsetData = partitioning.Parse(new [] {"x=3"});
+        var subsetData = partitioning.Parse(new [] {"x=3"}).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -64,7 +64,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         // Should respect type even if this value can be interpreted as int
-        var subsetData = partitioning.Parse(new [] {"y=hello", "x=4"});
+        var subsetData = partitioning.Parse(new [] {"y=hello", "x=4"}).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(2));
@@ -86,7 +86,7 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(new [] {"x=__HIVE_DEFAULT_PARTITION__"});
+        var subsetData = partitioning.Parse(new [] {"x=__HIVE_DEFAULT_PARTITION__"}).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -155,7 +155,7 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(new [] {"x%20%3d%23%21%2f=%3a%3b%2b%27%22"});
+        var subsetData = partitioning.Parse(new [] {"x%20%3d%23%21%2f=%3a%3b%2b%27%22"}).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));

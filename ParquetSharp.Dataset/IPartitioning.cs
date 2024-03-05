@@ -1,5 +1,3 @@
-using Apache.Arrow;
-
 namespace ParquetSharp.Dataset;
 
 public interface IPartitioning
@@ -16,6 +14,6 @@ public interface IPartitioning
     /// the returned partition data should only contain a subset of the full schema fields.
     /// </summary>
     /// <param name="pathComponents">Relative path within a dataset, split into components</param>
-    /// <returns>Arrow record batch with parsed partition data. The length of the batch must be 1.</returns>
-    RecordBatch Parse(string[] pathComponents);
+    /// <returns>The parsed partition information.</returns>
+    PartitionInformation Parse(string[] pathComponents);
 }

@@ -22,9 +22,9 @@ public sealed class NoPartitioning : IPartitioning
 
     public Apache.Arrow.Schema Schema => EmptySchema;
 
-    public RecordBatch Parse(string[] pathComponents)
+    public PartitionInformation Parse(string[] pathComponents)
     {
-        return new RecordBatch(EmptySchema, Array.Empty<IArrowArray>(), 1);
+        return new PartitionInformation(new RecordBatch(EmptySchema, Array.Empty<IArrowArray>(), 1));
     }
 
     private static readonly Apache.Arrow.Schema EmptySchema = new Apache.Arrow.Schema.Builder().Build();

@@ -10,11 +10,11 @@ internal class Constraint
         _evaluator = evaluator;
     }
 
-    public bool Satisfied(RecordBatch partitionData)
+    public bool Satisfied(PartitionInformation partitionInfo)
     {
-        if (partitionData.Schema.FieldsLookup.Contains(_columnName))
+        if (partitionInfo.Batch.Schema.FieldsLookup.Contains(_columnName))
         {
-            var scalarArray = partitionData.Column(_columnName);
+            var scalarArray = partitionInfo.Batch.Column(_columnName);
             scalarArray.Accept(_evaluator);
             return _evaluator.Satisfied;
         }

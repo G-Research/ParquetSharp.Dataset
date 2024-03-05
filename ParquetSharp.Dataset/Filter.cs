@@ -45,15 +45,11 @@ public sealed class Filter
     /// <summary>
     /// Whether data from a partition should be included
     /// </summary>
-    /// <param name="partitionData">RecordBatch with values from the partitioning</param>
+    /// <param name="partitionInfo">Column values from the partitioning</param>
     /// <returns>True if the partition should be included</returns>
-    public bool IncludePartition(Apache.Arrow.RecordBatch partitionData)
+    public bool IncludePartition(PartitionInformation partitionInfo)
     {
-        if (partitionData.Length != 1)
-        {
-            throw new ArgumentException("Expected partition data with a single row");
-        }
-        return _constraints.All(constraint => constraint.Satisfied(partitionData));
+        return _constraints.All(constraint => constraint.Satisfied(partitionInfo));
     }
 
     private readonly IReadOnlyList<Constraint> _constraints;

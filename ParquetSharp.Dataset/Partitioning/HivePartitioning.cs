@@ -12,7 +12,7 @@ public sealed class HivePartitioning : IPartitioning
 
     public Apache.Arrow.Schema Schema { get; }
 
-    public RecordBatch Parse(string[] pathComponents)
+    public PartitionInformation Parse(string[] pathComponents)
     {
         var arrays = new List<IArrowArray>();
         var fields = new List<Field>();
@@ -59,7 +59,7 @@ public sealed class HivePartitioning : IPartitioning
             schemaBuilder.Field(field);
         }
 
-        return new RecordBatch(schemaBuilder.Build(), arrays, 1);
+        return new PartitionInformation(new RecordBatch(schemaBuilder.Build(), arrays, 1));
     }
 
     private const string HiveNullValueFallback = "__HIVE_DEFAULT_PARTITION__";
