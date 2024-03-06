@@ -19,7 +19,7 @@ public sealed class DatasetReader
     {
         _directory = directory;
         _partitioningFactory = partitioningFactory ?? new NoPartitioning.Factory();
-        _expectedSchema = schema;
+        _schema = schema;
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
     }
@@ -33,7 +33,7 @@ public sealed class DatasetReader
     {
         _directory = directory;
         _partitioning = partitioning;
-        _expectedSchema = schema;
+        _schema = schema;
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
     }
@@ -45,9 +45,9 @@ public sealed class DatasetReader
     {
         get
         {
-            if (_expectedSchema != null)
+            if (_schema != null)
             {
-                return _expectedSchema;
+                return _schema;
             }
             // TODO: Read first file and get schema from partitioning
             throw new NotImplementedException();
@@ -77,7 +77,7 @@ public sealed class DatasetReader
     private readonly string _directory;
     private readonly IPartitioning? _partitioning;
     private readonly IPartitioningFactory? _partitioningFactory;
-    private readonly Apache.Arrow.Schema? _expectedSchema;
+    private readonly Apache.Arrow.Schema? _schema;
     private ReaderProperties? _readerProperties;
     private ArrowReaderProperties? _arrowReaderProperties;
 }
