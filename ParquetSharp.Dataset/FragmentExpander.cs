@@ -1,0 +1,47 @@
+using Apache.Arrow;
+
+namespace ParquetSharp.Dataset;
+
+/// <summary>
+/// Adds extra columns to record batches as required,
+/// so that their schema matches the full dataset schema.
+/// </summary>
+internal sealed class FragmentExpander
+{
+    public FragmentExpander(Apache.Arrow.Schema datasetSchema)
+    {
+        _datasetSchema = datasetSchema;
+    }
+
+    public RecordBatch ExpandBatch(RecordBatch fragmentBatch, PartitionInformation partitionInfo)
+    {
+        var fieldCount = _datasetSchema.FieldsList.Count;
+        var arrays = new List<IArrowArray>();
+        var fragmentFields = new HashSet<string>(fragmentBatch.Schema.FieldsList.Select(f => f.Name));
+        var partitionFields = new HashSet<string>(partitionInfo.Batch.Schema.FieldsList.Select(f => f.Name));
+        for (var i = 0; i < fieldCount; ++i)
+        {
+            var field = _datasetSchema.FieldsList[i];
+            if (fragmentFields.Contains(field.Name))
+            {
+                // TODO: Verify type matches schema
+                arrays.Add(fragmentBatch.Column(field.Name));
+            }
+            else if (partitionFields.Contains(field.Name))
+            {
+                var arrayCreator = new ConstantArrayCreator(fragmentBatch.Length);
+                partitionInfo.Batch.Column(field.Name).Accept(arrayCreator);
+                arrays.Add(arrayCreator.Array!);
+            }
+            else
+            {
+                // TODO: Set to null or default value?
+                throw new Exception($"Field {field.Name} not found in fragment data or partition information");
+            }
+        }
+
+        return new RecordBatch(_datasetSchema, arrays, fragmentBatch.Length);
+    }
+
+    private readonly Apache.Arrow.Schema _datasetSchema;
+}

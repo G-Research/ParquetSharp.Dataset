@@ -18,5 +18,8 @@ public sealed class PartitionInformation
         Batch = batch;
     }
 
+    public static PartitionInformation Empty => new PartitionInformation(new RecordBatch(
+        new Apache.Arrow.Schema.Builder().Build(), System.Array.Empty<IArrowArray>(), 1));
+
     public RecordBatch Batch { get; }
 }

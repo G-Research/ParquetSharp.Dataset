@@ -1,6 +1,3 @@
-using Apache.Arrow;
-using Array = System.Array;
-
 namespace ParquetSharp.Dataset.Partitioning;
 
 /// <summary>
@@ -24,7 +21,7 @@ public sealed class NoPartitioning : IPartitioning
 
     public PartitionInformation Parse(string[] pathComponents)
     {
-        return new PartitionInformation(new RecordBatch(EmptySchema, Array.Empty<IArrowArray>(), 1));
+        return PartitionInformation.Empty;
     }
 
     private static readonly Apache.Arrow.Schema EmptySchema = new Apache.Arrow.Schema.Builder().Build();

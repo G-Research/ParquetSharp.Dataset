@@ -16,6 +16,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
     {
         Schema = schema;
         _fragmentEnumerator = new FragmentEnumerator(directory, partitioning, filter);
+        _fragmentExpander = new FragmentExpander(schema);
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
     }
@@ -29,8 +30,8 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
             var nextBatch = await _currentFragmentReader.ReadNextRecordBatchAsync(cancellationToken);
             if (nextBatch != null)
             {
-                // TODO: Add partition data
-                return nextBatch;
+                return _fragmentExpander.ExpandBatch(
+                    nextBatch, _fragmentEnumerator.Current.PartitionInformation);
             }
             else
             {
@@ -70,6 +71,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
     private readonly FragmentEnumerator _fragmentEnumerator;
     private readonly ReaderProperties? _readerProperties;
     private readonly ArrowReaderProperties? _arrowReaderProperties;
+    private readonly FragmentExpander _fragmentExpander;
     private IArrowArrayStream? _currentFragmentReader = null;
     private FileReader? _currentFileReader = null;
 }
