@@ -25,6 +25,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        GetNextReader();
         while (_currentFragmentReader != null)
         {
             var nextBatch = await _currentFragmentReader.ReadNextRecordBatchAsync(cancellationToken);

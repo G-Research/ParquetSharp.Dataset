@@ -10,6 +10,15 @@ namespace ParquetSharp.Dataset;
 /// </summary>
 public sealed class DatasetReader
 {
+    /// <summary>
+    /// Create a new DatasetReader, providing a factory for inferring partitioning from the directory structure
+    /// </summary>
+    /// <param name="directory">The root directory of the dataset</param>
+    /// <param name="partitioningFactory">Factory for inferring partitioning</param>
+    /// <param name="schema">Optional explicit schema.
+    /// If not provided it will be inferred from the partitioning and data file schema</param>
+    /// <param name="readerProperties">Optional Parquet reader properties</param>
+    /// <param name="arrowReaderProperties">Optional Parquet Arrow reader properties</param>
     public DatasetReader(
         string directory,
         IPartitioningFactory? partitioningFactory = null,
@@ -24,6 +33,15 @@ public sealed class DatasetReader
         _arrowReaderProperties = arrowReaderProperties;
     }
 
+    /// <summary>
+    /// Create a new DatasetReader, providing a partitioning scheme
+    /// </summary>
+    /// <param name="directory">The root directory of the dataset</param>
+    /// <param name="partitioning">The partitioning to use</param>
+    /// <param name="schema">Optional explicit schema.
+    /// If not provided it will be inferred from the partitioning and data file schema</param>
+    /// <param name="readerProperties">Optional Parquet reader properties</param>
+    /// <param name="arrowReaderProperties">Optional Parquet Arrow reader properties</param>
     public DatasetReader(
         string directory,
         IPartitioning partitioning,
@@ -45,12 +63,29 @@ public sealed class DatasetReader
     {
         get
         {
-            if (_schema != null)
+            if (_schema == null)
             {
-                return _schema;
+                // TODO: Read first file and get schema from partitioning
+                throw new NotImplementedException();
             }
-            // TODO: Read first file and get schema from partitioning
-            throw new NotImplementedException();
+            return _schema;
+        }
+    }
+
+    public IPartitioning Partitioning
+    {
+        get
+        {
+            if (_partitioning == null)
+            {
+                if (_partitioningFactory == null)
+                {
+                    throw new Exception("Either a partitioning or partitioningFactory must be provided");
+                }
+                throw new NotImplementedException("Partitioning inference not yet implemented");
+            }
+
+            return _partitioning;
         }
     }
 
@@ -59,9 +94,16 @@ public sealed class DatasetReader
     /// </summary>
     /// <param name="filter">Optional filter to limit data read</param>
     /// <returns>Dataset data as a table</returns>
-    public Table ToTable(Filter? filter = null)
+    public async Task<Table> ToTable(Filter? filter = null)
     {
-        throw new NotImplementedException();
+        var arrayStream = ToBatches(filter);
+        var batches = new List<RecordBatch>();
+        while (await arrayStream.ReadNextRecordBatchAsync() is { } batch)
+        {
+            batches.Add(batch);
+        }
+
+        return Table.TableFromRecordBatches(Schema, batches);
     }
 
     /// <summary>
@@ -71,13 +113,14 @@ public sealed class DatasetReader
     /// <returns>Dataset data as an IArrowArrayStream</returns>
     public IArrowArrayStream ToBatches(Filter? filter = null)
     {
-        throw new NotImplementedException();
+        return new DatasetStreamReader(
+            _directory, Schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
     }
 
     private readonly string _directory;
     private readonly IPartitioning? _partitioning;
     private readonly IPartitioningFactory? _partitioningFactory;
     private readonly Apache.Arrow.Schema? _schema;
-    private ReaderProperties? _readerProperties;
-    private ArrowReaderProperties? _arrowReaderProperties;
+    private readonly ReaderProperties? _readerProperties;
+    private readonly ArrowReaderProperties? _arrowReaderProperties;
 }

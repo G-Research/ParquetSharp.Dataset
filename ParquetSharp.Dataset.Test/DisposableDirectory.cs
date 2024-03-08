@@ -37,5 +37,16 @@ internal sealed class DisposableDirectory : IDisposable
 
     public string DirectoryPath => _directoryPath;
 
+    public string AbsPath(string relativePath)
+    {
+        var absPath = Path.Join(_directoryPath, relativePath);
+        var dir = Path.GetDirectoryName(absPath);
+        if (dir != null && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+        return absPath;
+    }
+
     private readonly string _directoryPath;
 }

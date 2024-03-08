@@ -1,0 +1,153 @@
+using Apache.Arrow;
+using Apache.Arrow.Ipc;
+using Apache.Arrow.Types;
+using NUnit.Framework;
+using ParquetSharp.Arrow;
+using ParquetSharp.Dataset.Partitioning;
+
+namespace ParquetSharp.Dataset.Test;
+
+[TestFixture]
+public class TestDatasetReader
+{
+    [Test]
+    public async Task TestReadMultipleFilesWithExplicitSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning(),
+            schema: schema);
+        using var reader = dataset.ToBatches();
+        await VerifyData(reader, new Dictionary<int, int> {{0, 10}, {1, 10}});
+    }
+
+    [Test]
+    public async Task TestReadMultipleFilesWithHivePartitioning()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        using var batch2 = GenerateBatch(2);
+        using var batch3 = GenerateBatch(3);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data1.parquet"), batch1);
+        WriteParquetFile(tmpDir.AbsPath("part=b/data0.parquet"), batch2);
+        WriteParquetFile(tmpDir.AbsPath("part=b/data1.parquet"), batch3);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part", new StringType(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+                new Apache.Arrow.Schema.Builder()
+                    .Field(new Field("part", new StringType(), false))
+                    .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema: schema);
+
+        // Read all data
+        using var reader = dataset.ToBatches();
+        await VerifyData(
+            reader,
+            new Dictionary<int, int> {{0, 10}, {1, 10}, {2, 10}, {3, 10}},
+            new Dictionary<string, int> {{"a", 20}, {"b", 20}});
+
+        // Read filtered on partition
+        using var filteredReader = dataset.ToBatches(new Filter.Builder().WithEquality("part", "b").Build());
+        await VerifyData(
+            filteredReader,
+            new Dictionary<int, int> {{2, 10}, {3, 10}},
+            new Dictionary<string, int> {{"b", 20}});
+    }
+
+    private static async Task VerifyData(
+        IArrowArrayStream arrayStream,
+        Dictionary<int, int> expectedRowCountsById,
+        Dictionary<string, int>? expectedRowCountsByPart = null)
+    {
+        var rowCountsById = new Dictionary<int, int>();
+        var rowCountsByPart = new Dictionary<string, int>();
+
+        while (await arrayStream.ReadNextRecordBatchAsync() is { } batch)
+        {
+            using (batch)
+            {
+                var idValues = batch.Column("id") as Int32Array;
+                var xValues = batch.Column("x") as FloatArray;
+                Assert.That(idValues, Is.Not.Null);
+                Assert.That(xValues, Is.Not.Null);
+                StringArray? partValues = null;
+                if (expectedRowCountsByPart != null)
+                {
+                    partValues = batch.Column("part") as StringArray;
+                    Assert.That(partValues, Is.Not.Null);
+                }
+                for (var i = 0; i < batch.Length; ++i)
+                {
+                    var id = idValues!.GetValue(i)!.Value;
+                    var x = xValues!.GetValue(i)!.Value;
+                    if (!rowCountsById.TryAdd(id, 1))
+                    {
+                        rowCountsById[id] += 1;
+                    }
+                    Assert.That(x, Is.GreaterThanOrEqualTo((float) id));
+                    Assert.That(x, Is.LessThan((float) id + 1));
+
+                    if (partValues != null)
+                    {
+                        var part = partValues.GetString(i);
+                        if (!rowCountsByPart.TryAdd(part, 1))
+                        {
+                            rowCountsByPart[part] += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.That(rowCountsById.Count, Is.EqualTo(expectedRowCountsById.Count));
+        foreach (var kvp in expectedRowCountsById)
+        {
+            Assert.That(rowCountsById[kvp.Key], Is.EqualTo(kvp.Value));
+        }
+
+        if (expectedRowCountsByPart != null)
+        {
+            Assert.That(rowCountsByPart.Count, Is.EqualTo(expectedRowCountsByPart.Count));
+            foreach (var kvp in expectedRowCountsByPart)
+            {
+                Assert.That(rowCountsByPart[kvp.Key], Is.EqualTo(kvp.Value));
+            }
+        }
+    }
+
+    private static RecordBatch GenerateBatch(int id, int numRows=10)
+    {
+        var builder = new RecordBatch.Builder();
+        var idValues = Enumerable.Repeat(id, numRows).ToArray();
+        builder.Append("id", false, new Int32Array.Builder().Append(idValues));
+        var xValues = Enumerable.Range(0, numRows).Select(x => id + x / (float) numRows).ToArray();
+        builder.Append("x", false, new FloatArray.Builder().Append(xValues));
+        return builder.Build();
+    }
+
+    private static void WriteParquetFile(string path, RecordBatch batch)
+    {
+        using var writer = new FileWriter(path, batch.Schema);
+        writer.WriteRecordBatch(batch);
+        writer.Close();
+    }
+}

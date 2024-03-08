@@ -3,6 +3,10 @@ using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Partitioning;
 
+/// <summary>
+/// Implements the Hive partitioning strategy, where directories
+/// are named like "columnName=columnValue"
+/// </summary>
 public sealed class HivePartitioning : IPartitioning
 {
     public HivePartitioning(Apache.Arrow.Schema schema)
