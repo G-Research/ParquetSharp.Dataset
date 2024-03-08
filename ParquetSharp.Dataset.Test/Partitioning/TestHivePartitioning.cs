@@ -141,10 +141,9 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var exception = Assert.Throws<ArgumentException>(
+        var exception = Assert.Throws<Exception>(
             () => partitioning.Parse(new[] {"x3"}));
-        Assert.That(exception!.ParamName, Is.EqualTo("pathComponents"));
-        Assert.That(exception.Message, Does.Contain("'x3'"));
+        Assert.That(exception!.Message, Does.Contain("'x3'"));
     }
 
     [Test]
@@ -162,5 +161,75 @@ public class TestHivePartitioning
         var column = subsetData.Column("x =#!/") as StringArray;
         Assert.That(column, Is.Not.Null);
         Assert.That(column!.GetString(0), Is.EqualTo(":;+'\""));
+    }
+
+    [Test]
+    public void TestBuildHivePartitioning()
+    {
+        var factory = new HivePartitioning.Factory();
+        factory.Inspect(new [] {"x=3", "y=4", "z=hello"});
+        var partitioning = factory.Build();
+
+        var schema = partitioning.Schema;
+        Assert.That(schema.FieldsList.Count, Is.EqualTo(3));
+
+        var xField = schema.GetFieldByName("x");
+        Assert.That(xField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Int32));
+        Assert.That(xField.IsNullable);
+
+        var yField = schema.GetFieldByName("y");
+        Assert.That(yField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Int32));
+        Assert.That(yField.IsNullable);
+
+        var zField = schema.GetFieldByName("z");
+        Assert.That(zField.DataType.TypeId, Is.EqualTo(ArrowTypeId.String));
+        Assert.That(zField.IsNullable);
+    }
+
+    [Test]
+    public void TestBuildHivePartitioningWithDatasetSchema()
+    {
+        var factory = new HivePartitioning.Factory();
+        factory.Inspect(new [] {"x=3", "y=4", "z=hello"});
+
+        var datasetSchema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("x", new Int64Type(), false))
+            .Field(new Field("y", new UInt64Type(), false))
+            .Field(new Field("z", new StringType(), false))
+            .Field(new Field("a", new Int32Type(), false))
+            .Build();
+
+        var partitioning = factory.Build(datasetSchema);
+
+        var schema = partitioning.Schema;
+        Assert.That(schema.FieldsList.Count, Is.EqualTo(3));
+
+        var xField = schema.GetFieldByName("x");
+        Assert.That(xField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Int64));
+        Assert.That(xField.IsNullable, Is.False);
+
+        var yField = schema.GetFieldByName("y");
+        Assert.That(yField.DataType.TypeId, Is.EqualTo(ArrowTypeId.UInt64));
+        Assert.That(yField.IsNullable, Is.False);
+
+        var zField = schema.GetFieldByName("z");
+        Assert.That(zField.DataType.TypeId, Is.EqualTo(ArrowTypeId.String));
+        Assert.That(zField.IsNullable, Is.False);
+    }
+
+    [Test]
+    public void TestBuildHivePartitioningWithMissingField()
+    {
+        var factory = new HivePartitioning.Factory();
+        factory.Inspect(new [] {"x=3", "y=4", "z=hello"});
+
+        var datasetSchema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("x", new Int64Type(), false))
+            .Field(new Field("z", new StringType(), false))
+            .Field(new Field("a", new Int32Type(), false))
+            .Build();
+
+        var exception = Assert.Throws<Exception>(() => factory.Build(datasetSchema));
+        Assert.That(exception!.Message, Does.Contain("'y'"));
     }
 }

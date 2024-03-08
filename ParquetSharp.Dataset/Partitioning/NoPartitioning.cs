@@ -7,12 +7,12 @@ public sealed class NoPartitioning : IPartitioning
 {
     public sealed class Factory : IPartitioningFactory
     {
-        public IPartitioning Build(string[] paths, Apache.Arrow.Schema? schema = null)
+        public void Inspect(string[] pathComponents)
         {
-            if (schema != null && schema.FieldsList.Count > 0)
-            {
-                throw new ArgumentException("Expected an empty partition schema when using no partitioning");
-            }
+        }
+
+        public IPartitioning Build(Apache.Arrow.Schema? schema = null)
+        {
             return new NoPartitioning();
         }
     }

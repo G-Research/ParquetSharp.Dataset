@@ -1,5 +1,6 @@
 using System.Web;
 using Apache.Arrow;
+using Apache.Arrow.Types;
 
 namespace ParquetSharp.Dataset.Partitioning;
 
@@ -9,6 +10,52 @@ namespace ParquetSharp.Dataset.Partitioning;
 /// </summary>
 public sealed class HivePartitioning : IPartitioning
 {
+    public sealed class Factory : IPartitioningFactory
+    {
+        public void Inspect(string[] pathComponents)
+        {
+            foreach (var dirName in pathComponents)
+            {
+                var (fieldName, fieldValue) = ParseDirectoryName(dirName);
+                if (int.TryParse(fieldValue, out _))
+                {
+                    _observedFields[fieldName] = new Field(fieldName, new Int32Type(), true);
+                }
+                else
+                {
+                    _observedFields[fieldName] = new Field(fieldName, new StringType(), true);
+                }
+            }
+        }
+
+        public IPartitioning Build(Apache.Arrow.Schema? schema = null)
+        {
+            var builder = new Apache.Arrow.Schema.Builder();
+            foreach (var field in _observedFields.Values)
+            {
+                if (schema != null)
+                {
+                    if (schema.FieldsLookup.Contains(field.Name))
+                    {
+                        builder.Field(schema.GetFieldByName(field.Name));
+                    }
+                    else
+                    {
+                        throw new Exception($"Unexpected partitioning field '{field.Name}' found");
+                    }
+                }
+                else
+                {
+                    builder.Field(field);
+                }
+            }
+
+            return new HivePartitioning(builder.Build());
+        }
+
+        private readonly Dictionary<string, Field> _observedFields = new();
+    }
+
     public HivePartitioning(Apache.Arrow.Schema schema)
     {
         Schema = schema ?? throw new ArgumentNullException(nameof(schema));
@@ -21,17 +68,9 @@ public sealed class HivePartitioning : IPartitioning
         var arrays = new List<IArrowArray>();
         var fields = new List<Field>();
 
-        foreach (var component in pathComponents)
+        foreach (var dirName in pathComponents)
         {
-            var split = component.Split('=', 2);
-            if (split.Length != 2)
-            {
-                throw new ArgumentException(
-                    $"Invalid directory name for Hive partitioning '{component}'", nameof(pathComponents));
-            }
-
-            var fieldName = HttpUtility.UrlDecode(split[0]);
-            var fieldValue = HttpUtility.UrlDecode(split[1]);
+            var (fieldName, fieldValue) = ParseDirectoryName(dirName);
             var field = Schema.GetFieldByName(fieldName);
             if (field == null)
             {
@@ -64,6 +103,20 @@ public sealed class HivePartitioning : IPartitioning
         }
 
         return new PartitionInformation(new RecordBatch(schemaBuilder.Build(), arrays, 1));
+    }
+
+    private static (string, string) ParseDirectoryName(string directoryName)
+    {
+        var split = directoryName.Split('=', 2);
+        if (split.Length != 2)
+        {
+            throw new Exception(
+                $"Invalid directory name for Hive partitioning '{directoryName}'");
+        }
+
+        var fieldName = HttpUtility.UrlDecode(split[0]);
+        var fieldValue = HttpUtility.UrlDecode(split[1]);
+        return (fieldName, fieldValue);
     }
 
     private const string HiveNullValueFallback = "__HIVE_DEFAULT_PARTITION__";

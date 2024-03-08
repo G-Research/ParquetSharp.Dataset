@@ -26,11 +26,25 @@ public sealed class DatasetReader
         ReaderProperties? readerProperties = null,
         ArrowReaderProperties? arrowReaderProperties = null)
     {
-        _directory = directory;
-        _partitioningFactory = partitioningFactory ?? new NoPartitioning.Factory();
-        _schema = schema;
+        _directory = directory ?? throw new ArgumentNullException(nameof(directory));
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
+
+        partitioningFactory ??= new NoPartitioning.Factory();
+        if (schema == null)
+        {
+            // Infer both schema and partitioning
+            var dataFileSchemaBuilder = new DataFileSchemaBuilder(_readerProperties, _arrowReaderProperties);
+            InspectTree(_directory, partitioningFactory, dataFileSchemaBuilder);
+            Partitioning = partitioningFactory.Build();
+            Schema = MergeSchemas(Partitioning.Schema, dataFileSchemaBuilder.Build());
+        }
+        else
+        {
+            Schema = schema;
+            InspectTree(_directory, partitioningFactory, null);
+            Partitioning = partitioningFactory.Build(schema);
+        }
     }
 
     /// <summary>
@@ -49,44 +63,33 @@ public sealed class DatasetReader
         ReaderProperties? readerProperties = null,
         ArrowReaderProperties? arrowReaderProperties = null)
     {
-        _directory = directory;
-        _partitioning = partitioning;
-        _schema = schema;
+        _directory = directory ?? throw new ArgumentNullException(nameof(directory));
+        Partitioning = partitioning ?? throw new ArgumentNullException(nameof(partitioning));
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
+
+        if (schema == null)
+        {
+            var dataFileSchemaBuilder = new DataFileSchemaBuilder(_readerProperties, _arrowReaderProperties);
+            InspectTree(_directory, null, dataFileSchemaBuilder);
+            Schema = MergeSchemas(partitioning.Schema, dataFileSchemaBuilder.Build());
+        }
+        else
+        {
+            // TODO: Validate partitioning schema is a subst of the specified schema
+            Schema = schema;
+        }
     }
 
     /// <summary>
-    /// Get the Arrow Schema for data in this Dataset
+    /// The Arrow Schema for data in this Dataset
     /// </summary>
-    public Apache.Arrow.Schema Schema
-    {
-        get
-        {
-            if (_schema == null)
-            {
-                _schema = MergeSchemas(Partitioning.Schema, GetDataFileSchema());
-            }
-            return _schema;
-        }
-    }
+    public Apache.Arrow.Schema Schema { get; }
 
-    public IPartitioning Partitioning
-    {
-        get
-        {
-            if (_partitioning == null)
-            {
-                if (_partitioningFactory == null)
-                {
-                    throw new Exception("Either a partitioning or partitioningFactory must be provided");
-                }
-                throw new NotImplementedException("Partitioning inference not yet implemented");
-            }
-
-            return _partitioning;
-        }
-    }
+    /// <summary>
+    /// The Partitioning scheme for this Dataset
+    /// </summary>
+    public IPartitioning Partitioning { get; }
 
     /// <summary>
     /// Read a dataset to an Arrow Table
@@ -116,22 +119,26 @@ public sealed class DatasetReader
             _directory, Schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
     }
 
-    private Apache.Arrow.Schema GetDataFileSchema()
+    private static void InspectTree(
+        string directory,
+        IPartitioningFactory? partitioningFactory,
+        DataFileSchemaBuilder? dataSchemaBuilder)
     {
-        // TODO: Allow reading more than one file or using a specific file, in case some have missing fields?
-        var fragmentEnumerator = new FragmentEnumerator(_directory, Partitioning, filter: null);
-        if (!fragmentEnumerator.MoveNext())
+        // Find the first data file and use it to infer partitioning and/or the data file schema.
+        // TODO: Allow using multiple paths, in case subtrees do not all have the same structure
+        // or data files have different fields?
+        // May want to use multiple paths for partitioning but only one for data files?
+        var fragmentEnumerator = new FragmentEnumerator(directory, new NoPartitioning(), filter: null);
+        if (fragmentEnumerator.MoveNext())
         {
-            // No data files found
-            return new Apache.Arrow.Schema.Builder().Build();
+            partitioningFactory?.Inspect(fragmentEnumerator.Current.PartitionPath);
+            dataSchemaBuilder?.Inspect(fragmentEnumerator.Current.FilePath);
         }
-
-        var filePath = fragmentEnumerator.Current.FilePath;
-        using var fileReader = new FileReader(filePath, _readerProperties, _arrowReaderProperties);
-        return fileReader.Schema;
     }
 
-    private static Apache.Arrow.Schema MergeSchemas(Apache.Arrow.Schema partitioningSchema, Apache.Arrow.Schema dataSchema)
+    private static Apache.Arrow.Schema MergeSchemas(
+        Apache.Arrow.Schema partitioningSchema,
+        Apache.Arrow.Schema dataSchema)
     {
         var builder = new Apache.Arrow.Schema.Builder();
         var partitionFields = new HashSet<string>();
@@ -153,9 +160,6 @@ public sealed class DatasetReader
     }
 
     private readonly string _directory;
-    private readonly IPartitioning? _partitioning;
-    private readonly IPartitioningFactory? _partitioningFactory;
-    private Apache.Arrow.Schema? _schema;
     private readonly ReaderProperties? _readerProperties;
     private readonly ArrowReaderProperties? _arrowReaderProperties;
 }

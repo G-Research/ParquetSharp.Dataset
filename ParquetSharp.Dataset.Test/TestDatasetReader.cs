@@ -127,6 +127,63 @@ public class TestDatasetReader
         Assert.That(xField.IsNullable, Is.False);
     }
 
+    [Test]
+    public void TestGetSchemaFromDataFileAndPartitioningFactory()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+
+        var partitioningFactory = new HivePartitioning.Factory();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioningFactory);
+
+        var schema = dataset.Schema;
+
+        Assert.That(schema.FieldsList.Count, Is.EqualTo(3));
+
+        var partField = schema.GetFieldByName("part");
+        Assert.That(partField.DataType.TypeId, Is.EqualTo(ArrowTypeId.String));
+        Assert.That(partField.IsNullable, Is.True);
+
+        var idField = schema.GetFieldByName("id");
+        Assert.That(idField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Int32));
+        Assert.That(idField.IsNullable, Is.False);
+
+        var xField = schema.GetFieldByName("x");
+        Assert.That(xField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Float));
+        Assert.That(xField.IsNullable, Is.False);
+    }
+
+    [Test]
+    public void TestInferPartitioningSchemaFromExplicitSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part", new StringType(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+
+        var partitioningFactory = new HivePartitioning.Factory();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioningFactory,
+            schema: schema);
+
+        var partitionSchema = dataset.Partitioning.Schema;
+
+        Assert.That(partitionSchema.FieldsList.Count, Is.EqualTo(1));
+
+        var partField = partitionSchema.GetFieldByName("part");
+        Assert.That(partField.DataType.TypeId, Is.EqualTo(ArrowTypeId.String));
+        Assert.That(partField.IsNullable, Is.False);
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,

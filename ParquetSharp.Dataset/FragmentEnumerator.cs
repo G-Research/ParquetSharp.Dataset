@@ -4,13 +4,16 @@ namespace ParquetSharp.Dataset;
 
 internal sealed class PartitionFragment
 {
-    public PartitionFragment(string filePath, PartitionInformation partitionInformation)
+    public PartitionFragment(string filePath, PartitionInformation partitionInformation, string[] partitionPath)
     {
         FilePath = filePath;
         PartitionInformation = partitionInformation;
+        PartitionPath = partitionPath;
     }
 
     public string FilePath { get; }
+
+    public string[] PartitionPath { get; }
 
     public PartitionInformation PartitionInformation { get; }
 }
@@ -46,6 +49,7 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
             }
 
             _currentPartition = partitionInfo;
+            _currentPartitionPath = pathComponents;
 
             var directoryPath = Path.Join(_rootDirectory, Path.Join(pathComponents));
             var directoryInfo = new DirectoryInfo(directoryPath);
@@ -93,7 +97,7 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
                 throw new InvalidOperationException("Enumerator has not been moved yet");
             }
 
-            return new PartitionFragment(_currentPath, _currentPartition!);
+            return new PartitionFragment(_currentPath, _currentPartition!, _currentPartitionPath!);
         }
     }
 
@@ -110,4 +114,5 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
     private readonly Queue<string> _fileQueue;
     private string? _currentPath = null;
     private PartitionInformation? _currentPartition = null;
+    private string[]? _currentPartitionPath = null;
 }
