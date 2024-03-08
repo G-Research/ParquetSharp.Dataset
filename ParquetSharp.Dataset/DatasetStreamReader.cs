@@ -58,13 +58,29 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         {
             _currentFileReader = new FileReader(
                 _fragmentEnumerator.Current.FilePath, _readerProperties, _arrowReaderProperties);
-            _currentFragmentReader = _currentFileReader.GetRecordBatchReader();
+            var columnIndices = GetFileColumnIndices(_currentFileReader, Schema);
+            _currentFragmentReader = _currentFileReader.GetRecordBatchReader(columns: columnIndices);
         }
         else
         {
             _currentFileReader = null;
             _currentFragmentReader = null;
         }
+    }
+
+    private static int[] GetFileColumnIndices(FileReader fileReader, Apache.Arrow.Schema schema)
+    {
+        var fileSchema = fileReader.Schema;
+        var columnIndices = new List<int>();
+        foreach (var field in schema.FieldsList)
+        {
+            // Field may come from the partition information rather than the data file
+            if (fileSchema.FieldsLookup.Contains(field.Name))
+            {
+                columnIndices.Add(fileSchema.GetFieldIndex(field.Name));
+            }
+        }
+        return columnIndices.ToArray();
     }
 
     public Apache.Arrow.Schema Schema { get; }

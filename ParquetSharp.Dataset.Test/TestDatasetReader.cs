@@ -74,6 +74,112 @@ public class TestDatasetReader
     }
 
     [Test]
+    public async Task TestReadColumnSubset()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part=b/data0.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part", new StringType(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+                new Apache.Arrow.Schema.Builder()
+                    .Field(new Field("part", new StringType(), false))
+                    .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema: schema);
+
+        // Read all files, but a subset of columns
+        using var reader = dataset.ToBatches(columns: new [] {"id", "part"});
+        Assert.That(reader.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(new [] {"id", "part"}));
+
+        while (await reader.ReadNextRecordBatchAsync() is { } batch)
+        {
+            using (batch)
+            {
+                Assert.That(batch.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(new [] {"id", "part"}));
+                Assert.That(batch.ColumnCount, Is.EqualTo(2));
+                Assert.That(batch.Column(0), Is.InstanceOf<Int32Array>());
+                Assert.That(batch.Column(1), Is.InstanceOf<StringArray>());
+            }
+        }
+    }
+
+    [Test]
+    public async Task TestReadExcludingPartitionColumn()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part=b/data0.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part", new StringType(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+                new Apache.Arrow.Schema.Builder()
+                    .Field(new Field("part", new StringType(), false))
+                    .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema: schema);
+
+        // Read all files, but don't create a column for the partitioning field
+        using var reader = dataset.ToBatches(columns: new [] {"id", "x"});
+        Assert.That(reader.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(new [] {"id", "x"}));
+
+        while (await reader.ReadNextRecordBatchAsync() is { } batch)
+        {
+            using (batch)
+            {
+                Assert.That(batch.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(new [] {"id", "x"}));
+                Assert.That(batch.ColumnCount, Is.EqualTo(2));
+                Assert.That(batch.Column(0), Is.InstanceOf<Int32Array>());
+                Assert.That(batch.Column(1), Is.InstanceOf<FloatArray>());
+            }
+        }
+    }
+
+    [Test]
+    public void TestInvalidColumnName()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part=b/data0.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part", new StringType(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+                new Apache.Arrow.Schema.Builder()
+                    .Field(new Field("part", new StringType(), false))
+                    .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema: schema);
+
+        var exception = Assert.Throws<ArgumentException>(
+            () => dataset.ToBatches(columns: new[] {"part", "id", "nonexistent"}));
+        Assert.That(exception!.Message, Does.Contain("'nonexistent'"));
+    }
+
+    [Test]
     public void TestGetSchemaWithNoDataFiles()
     {
         using var tmpDir = new DisposableDirectory();

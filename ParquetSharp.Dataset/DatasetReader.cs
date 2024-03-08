@@ -95,10 +95,11 @@ public sealed class DatasetReader
     /// Read a dataset to an Arrow Table
     /// </summary>
     /// <param name="filter">Optional filter to limit data read</param>
+    /// <param name="columns">Names of columns to read</param>
     /// <returns>Dataset data as a table</returns>
-    public async Task<Table> ToTable(Filter? filter = null)
+    public async Task<Table> ToTable(Filter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
-        var arrayStream = ToBatches(filter);
+        var arrayStream = ToBatches(filter, columns);
         var batches = new List<RecordBatch>();
         while (await arrayStream.ReadNextRecordBatchAsync() is { } batch)
         {
@@ -112,11 +113,32 @@ public sealed class DatasetReader
     /// Read a dataset to an Arrow RecordBatch stream
     /// </summary>
     /// <param name="filter">Optional filter to limit data read</param>
+    /// <param name="columns">Names of columns to read</param>
     /// <returns>Dataset data as an IArrowArrayStream</returns>
-    public IArrowArrayStream ToBatches(Filter? filter = null)
+    public IArrowArrayStream ToBatches(Filter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
+        Apache.Arrow.Schema schema;
+        if (columns == null)
+        {
+            schema = Schema;
+        }
+        else
+        {
+            var schemaBuilder = new Apache.Arrow.Schema.Builder();
+            foreach (var columnName in columns)
+            {
+                var field = Schema.GetFieldByName(columnName);
+                if (field == null)
+                {
+                    throw new ArgumentException($"Invalid column name '{columnName}'", nameof(columns));
+                }
+                schemaBuilder.Field(field);
+            }
+
+            schema = schemaBuilder.Build();
+        }
         return new DatasetStreamReader(
-            _directory, Schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
+            _directory, schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
     }
 
     private static void InspectTree(

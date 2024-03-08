@@ -10,18 +10,18 @@ internal sealed class FragmentExpander
 {
     public FragmentExpander(Apache.Arrow.Schema datasetSchema)
     {
-        _datasetSchema = datasetSchema;
+        _resultSchema = datasetSchema;
     }
 
     public RecordBatch ExpandBatch(RecordBatch fragmentBatch, PartitionInformation partitionInfo)
     {
-        var fieldCount = _datasetSchema.FieldsList.Count;
+        var fieldCount = _resultSchema.FieldsList.Count;
         var arrays = new List<IArrowArray>();
         var fragmentFields = new HashSet<string>(fragmentBatch.Schema.FieldsList.Select(f => f.Name));
         var partitionFields = new HashSet<string>(partitionInfo.Batch.Schema.FieldsList.Select(f => f.Name));
         for (var i = 0; i < fieldCount; ++i)
         {
-            var field = _datasetSchema.FieldsList[i];
+            var field = _resultSchema.FieldsList[i];
             if (fragmentFields.Contains(field.Name))
             {
                 // TODO: Verify type matches schema
@@ -40,8 +40,8 @@ internal sealed class FragmentExpander
             }
         }
 
-        return new RecordBatch(_datasetSchema, arrays, fragmentBatch.Length);
+        return new RecordBatch(_resultSchema, arrays, fragmentBatch.Length);
     }
 
-    private readonly Apache.Arrow.Schema _datasetSchema;
+    private readonly Apache.Arrow.Schema _resultSchema;
 }
