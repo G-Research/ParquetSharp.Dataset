@@ -65,8 +65,7 @@ public sealed class DatasetReader
         {
             if (_schema == null)
             {
-                // TODO: Read first file and get schema from partitioning
-                throw new NotImplementedException();
+                _schema = MergeSchemas(Partitioning.Schema, GetDataFileSchema());
             }
             return _schema;
         }
@@ -117,10 +116,46 @@ public sealed class DatasetReader
             _directory, Schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
     }
 
+    private Apache.Arrow.Schema GetDataFileSchema()
+    {
+        // TODO: Allow reading more than one file or using a specific file, in case some have missing fields?
+        var fragmentEnumerator = new FragmentEnumerator(_directory, Partitioning, filter: null);
+        if (!fragmentEnumerator.MoveNext())
+        {
+            // No data files found
+            return new Apache.Arrow.Schema.Builder().Build();
+        }
+
+        var filePath = fragmentEnumerator.Current.FilePath;
+        using var fileReader = new FileReader(filePath, _readerProperties, _arrowReaderProperties);
+        return fileReader.Schema;
+    }
+
+    private static Apache.Arrow.Schema MergeSchemas(Apache.Arrow.Schema partitioningSchema, Apache.Arrow.Schema dataSchema)
+    {
+        var builder = new Apache.Arrow.Schema.Builder();
+        var partitionFields = new HashSet<string>();
+        foreach (var field in partitioningSchema.FieldsList)
+        {
+            partitionFields.Add(field.Name);
+            builder.Field(field);
+        }
+        foreach (var field in dataSchema.FieldsList)
+        {
+            if (partitionFields.Contains(field.Name))
+            {
+                throw new Exception($"Duplicate field name '{field.Name}' found in partition schema and data file schema");
+            }
+            builder.Field(field);
+        }
+        // Metadata is currently ignored
+        return builder.Build();
+    }
+
     private readonly string _directory;
     private readonly IPartitioning? _partitioning;
     private readonly IPartitioningFactory? _partitioningFactory;
-    private readonly Apache.Arrow.Schema? _schema;
+    private Apache.Arrow.Schema? _schema;
     private readonly ReaderProperties? _readerProperties;
     private readonly ArrowReaderProperties? _arrowReaderProperties;
 }

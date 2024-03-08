@@ -73,6 +73,60 @@ public class TestDatasetReader
             new Dictionary<string, int> {{"b", 20}});
     }
 
+    [Test]
+    public void TestGetSchemaWithNoDataFiles()
+    {
+        using var tmpDir = new DisposableDirectory();
+
+        var partitioning = new HivePartitioning(
+                new Apache.Arrow.Schema.Builder()
+                    .Field(new Field("part", new StringType(), false))
+                    .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning);
+
+        var schema = dataset.Schema;
+
+        Assert.That(schema.FieldsList.Count, Is.EqualTo(1));
+
+        var partField = schema.GetFieldByName("part");
+        Assert.That(partField.DataType.TypeId, Is.EqualTo(ArrowTypeId.String));
+        Assert.That(partField.IsNullable, Is.False);
+    }
+
+    [Test]
+    public void TestGetSchemaFromDataFileAndPartitioning()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+
+        var partitioning = new HivePartitioning(
+                new Apache.Arrow.Schema.Builder()
+                    .Field(new Field("part", new StringType(), false))
+                    .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning);
+
+        var schema = dataset.Schema;
+
+        Assert.That(schema.FieldsList.Count, Is.EqualTo(3));
+
+        var partField = schema.GetFieldByName("part");
+        Assert.That(partField.DataType.TypeId, Is.EqualTo(ArrowTypeId.String));
+        Assert.That(partField.IsNullable, Is.False);
+
+        var idField = schema.GetFieldByName("id");
+        Assert.That(idField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Int32));
+        Assert.That(idField.IsNullable, Is.False);
+
+        var xField = schema.GetFieldByName("x");
+        Assert.That(xField.DataType.TypeId, Is.EqualTo(ArrowTypeId.Float));
+        Assert.That(xField.IsNullable, Is.False);
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,
