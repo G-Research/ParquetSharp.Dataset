@@ -353,6 +353,145 @@ public class TestDatasetReader
         Assert.That(partField.IsNullable, Is.False);
     }
 
+    [Test]
+    public void TestDuplicateFieldInDataAndPartitioningWithExplicitSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("id=2/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("id=3/data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("id", new Int32Type(), false))
+                .Build());
+
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema);
+        using var reader = dataset.ToBatches();
+        var exception = Assert.ThrowsAsync<Exception>(async () =>
+        {
+            while (await reader.ReadNextRecordBatchAsync() is { } batch)
+            {
+                using (batch)
+                {
+                }
+            }
+        });
+        Assert.That(exception!.Message, Does.Contain("'id' found in both"));
+    }
+
+    [Test]
+    public void TestDuplicateFieldInDataWithPartitioningFactoryAndExplicitSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("id=2/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("id=3/data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new HivePartitioning.Factory(),
+            schema);
+        using var reader = dataset.ToBatches();
+        var exception = Assert.ThrowsAsync<Exception>(async () =>
+        {
+            while (await reader.ReadNextRecordBatchAsync() is { } batch)
+            {
+                using (batch)
+                {
+                }
+            }
+        });
+        Assert.That(exception!.Message, Does.Contain("'id' found in both"));
+    }
+
+    [Test]
+    public void TestDuplicateFieldInDataAndPartitioningWithInferredSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("id=2/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("id=3/data1.parquet"), batch1);
+
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("id", new Int32Type(), false))
+                .Build());
+
+        var exception = Assert.Throws<Exception>(() => new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning));
+        Assert.That(exception!.Message, Does.Contain("Duplicate field name 'id'"));
+    }
+
+    [Test]
+    public void TestDuplicateFieldInDataWithPartitioningFactoryAndInferredSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("id=2/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("id=3/data1.parquet"), batch1);
+
+        var exception = Assert.Throws<Exception>(() => new DatasetReader(
+            tmpDir.DirectoryPath,
+            new HivePartitioning.Factory()));
+        Assert.That(exception!.Message, Does.Contain("Duplicate field name 'id'"));
+    }
+
+    [Test]
+    public void TestPartitionFieldMissingFromSchema()
+    {
+        using var tmpDir = new DisposableDirectory();
+
+        var schema = new Apache.Arrow.Schema.Builder()
+                .Field(new Field("x", new Int32Type(), false))
+                .Field(new Field("y", new Int32Type(), false))
+                .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("y", new Int32Type(), false))
+                .Field(new Field("z", new Int32Type(), false))
+                .Build());
+
+        var exception = Assert.Throws<Exception>(() => new DatasetReader(
+            tmpDir.DirectoryPath, partitioning, schema));
+        Assert.That(exception!.Message, Does.Contain("'z' is not present"));
+    }
+
+    [Test]
+    public void TestPartitionFieldTypeMismatch()
+    {
+        using var tmpDir = new DisposableDirectory();
+
+        var schema = new Apache.Arrow.Schema.Builder()
+                .Field(new Field("x", new Int32Type(), false))
+                .Field(new Field("y", new Int32Type(), false))
+                .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("x", new StringType(), false))
+                .Build());
+
+        var exception = Assert.Throws<Exception>(() => new DatasetReader(
+            tmpDir.DirectoryPath, partitioning, schema));
+        Assert.That(exception!.Message, Does.Contain("'x' type"));
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,

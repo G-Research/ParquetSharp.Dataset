@@ -24,6 +24,11 @@ internal sealed class FragmentExpander
             var field = _resultSchema.FieldsList[i];
             if (fragmentFields.Contains(field.Name))
             {
+                if (partitionFields.Contains(field.Name))
+                {
+                    throw new Exception(
+                        $"Field '{field.Name}' found in both the fragment data and partition information");
+                }
                 var typeComparer = new TypeComparer(field.DataType);
                 var fragmentField = fragmentBatch.Schema.GetFieldByName(field.Name);
                 fragmentField.DataType.Accept(typeComparer);

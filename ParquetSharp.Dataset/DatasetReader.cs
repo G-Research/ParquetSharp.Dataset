@@ -76,7 +76,7 @@ public sealed class DatasetReader
         }
         else
         {
-            // TODO: Validate partitioning schema is a subst of the specified schema
+            ValidatePartitionSchema(partitioning.Schema, schema);
             Schema = schema;
         }
     }
@@ -179,6 +179,27 @@ public sealed class DatasetReader
         }
         // Metadata is currently ignored
         return builder.Build();
+    }
+
+    private static void ValidatePartitionSchema(Apache.Arrow.Schema partitioningSchema, Apache.Arrow.Schema datasetSchema)
+    {
+        foreach (var field in partitioningSchema.FieldsList)
+        {
+            if (!datasetSchema.FieldsLookup.Contains(field.Name))
+            {
+                throw new Exception(
+                    $"Partitioning field '{field.Name}' is not present in the dataset schema");
+            }
+
+            var datasetField = datasetSchema.GetFieldByName(field.Name);
+            var typeComparer = new TypeComparer(datasetField.DataType);
+            field.DataType.Accept(typeComparer);
+            if (!typeComparer.TypesMatch)
+            {
+                throw new Exception(
+                    $"Partitioning field '{field.Name}' type {field.DataType} does not match the dataset field type {datasetField.DataType}");
+            }
+        }
     }
 
     private readonly string _directory;
