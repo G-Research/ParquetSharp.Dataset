@@ -24,7 +24,14 @@ internal sealed class FragmentExpander
             var field = _resultSchema.FieldsList[i];
             if (fragmentFields.Contains(field.Name))
             {
-                // TODO: Verify type matches schema
+                var typeComparer = new TypeComparer(field.DataType);
+                var fragmentField = fragmentBatch.Schema.GetFieldByName(field.Name);
+                fragmentField.DataType.Accept(typeComparer);
+                if (!typeComparer.TypesMatch)
+                {
+                    throw new Exception(
+                        $"Data type {fragmentField.DataType} for column '{field.Name}' doesn't match the expected type {field.DataType}");
+                }
                 arrays.Add(fragmentBatch.Column(field.Name));
             }
             else if (partitionFields.Contains(field.Name))
@@ -36,7 +43,7 @@ internal sealed class FragmentExpander
             else
             {
                 // TODO: Set to null or default value?
-                throw new Exception($"Field {field.Name} not found in fragment data or partition information");
+                throw new Exception($"Field '{field.Name}' not found in fragment data or partition information");
             }
         }
 

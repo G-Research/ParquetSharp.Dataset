@@ -3,7 +3,7 @@ using Apache.Arrow;
 namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
-/// Tests whether an array contains a single string equal to a specified value
+/// Tests whether an array contains a single string within a set of specified values
 /// </summary>
 internal sealed class StringInSetEvaluator
     : IFilterEvaluator

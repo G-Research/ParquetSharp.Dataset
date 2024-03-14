@@ -41,7 +41,8 @@ public sealed class HivePartitioning : IPartitioning
                     }
                     else
                     {
-                        throw new Exception($"Unexpected partitioning field '{field.Name}' found");
+                        throw new Exception(
+                            $"Found partitioning field '{field.Name}' that is not in the specified schema");
                     }
                 }
                 else

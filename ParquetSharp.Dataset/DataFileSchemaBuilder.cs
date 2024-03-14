@@ -2,6 +2,9 @@ using ParquetSharp.Arrow;
 
 namespace ParquetSharp.Dataset;
 
+/// <summary>
+/// Determines the schema of data files in a dataset
+/// </summary>
 internal sealed class DataFileSchemaBuilder
 {
     public DataFileSchemaBuilder(ReaderProperties? readerProperties, ArrowReaderProperties? arrowReaderProperties)

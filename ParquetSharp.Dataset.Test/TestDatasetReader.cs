@@ -153,7 +153,7 @@ public class TestDatasetReader
     }
 
     [Test]
-    public void TestInvalidColumnName()
+    public void TestInvalidColumnNameSelected()
     {
         using var tmpDir = new DisposableDirectory();
         using var batch0 = GenerateBatch(0);
@@ -178,6 +178,68 @@ public class TestDatasetReader
         var exception = Assert.Throws<ArgumentException>(
             () => dataset.ToBatches(columns: new[] {"part", "id", "nonexistent"}));
         Assert.That(exception!.Message, Does.Contain("'nonexistent'"));
+    }
+
+    [Test]
+    public void TestReadDataWithTypeMismatch()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = new RecordBatch.Builder()
+            .Append("id", false, col => col.Int32(array => array.AppendRange(Enumerable.Range(0, 100))))
+            .Append("x", false, col => col.Float(array => array.AppendRange(Enumerable.Range(0, 100).Select(i => 0.1f * i))))
+            .Build();
+        using var batch1 = new RecordBatch.Builder()
+            .Append("id", false, col => col.Int32(array => array.AppendRange(Enumerable.Range(0, 100))))
+            .Append("x", false, col => col.Double(array => array.AppendRange(Enumerable.Range(0, 100).Select(i => 0.2 * i))))
+            .Build();
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
+
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning());
+        using var reader = dataset.ToBatches();
+        var exception = Assert.ThrowsAsync<Exception>(async () =>
+        {
+            while (await reader.ReadNextRecordBatchAsync() is { } batch)
+            {
+                using (batch)
+                {
+                }
+            }
+        });
+        Assert.That(exception!.Message, Does.Contain("'x'"));
+    }
+
+    [Test]
+    public void TestReadDataWithFieldMismatch()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = new RecordBatch.Builder()
+            .Append("id", false, col => col.Int32(array => array.AppendRange(Enumerable.Range(0, 100))))
+            .Append("x", false, col => col.Float(array => array.AppendRange(Enumerable.Range(0, 100).Select(i => 0.1f * i))))
+            .Build();
+        using var batch1 = new RecordBatch.Builder()
+            .Append("id", false, col => col.Int32(array => array.AppendRange(Enumerable.Range(0, 100))))
+            .Append("y", false, col => col.Double(array => array.AppendRange(Enumerable.Range(0, 100).Select(i => 0.2 * i))))
+            .Build();
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
+
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning());
+        using var reader = dataset.ToBatches();
+        var exception = Assert.ThrowsAsync<Exception>(async () =>
+        {
+            while (await reader.ReadNextRecordBatchAsync() is { } batch)
+            {
+                using (batch)
+                {
+                }
+            }
+        });
+        Assert.That(exception!.Message, Does.Contain("'x'"));
     }
 
     [Test]
