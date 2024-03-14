@@ -117,6 +117,17 @@ public sealed class DatasetReader
     /// <returns>Dataset data as an IArrowArrayStream</returns>
     public IArrowArrayStream ToBatches(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
+        if (filter != null)
+        {
+            foreach (var column in filter.Columns())
+            {
+                if (!Partitioning.Schema.FieldsLookup.Contains(column))
+                {
+                    throw new ArgumentException(
+                        $"Invalid field name '{column}' in filter expression. Filters may only use partitioning fields", nameof(filter));
+                }
+            }
+        }
         Apache.Arrow.Schema schema;
         if (columns == null)
         {

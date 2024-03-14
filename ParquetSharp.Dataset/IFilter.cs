@@ -11,4 +11,10 @@ public interface IFilter
     /// <param name="partitionInformation">Partition column values</param>
     /// <returns>True if the partition data should be read</returns>
     bool IncludePartition(PartitionInformation partitionInformation);
+
+    /// <summary>
+    /// Get the names of columns required for evaluating the filter
+    /// </summary>
+    /// <returns>Column names</returns>
+    IEnumerable<string> Columns();
 }

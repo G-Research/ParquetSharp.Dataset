@@ -22,6 +22,11 @@ internal sealed class ColumnValueFilter : IFilter
         return true;
     }
 
+    public IEnumerable<string> Columns()
+    {
+        return new[] {_columnName};
+    }
+
     private readonly string _columnName;
     private readonly IFilterEvaluator _evaluator;
 }

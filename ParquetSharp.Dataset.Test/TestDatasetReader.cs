@@ -492,6 +492,36 @@ public class TestDatasetReader
         Assert.That(exception!.Message, Does.Contain("'x' type"));
     }
 
+    [Test]
+    public void TestInvalidFilterColumn()
+    {
+        using var tmpDir = new DisposableDirectory();
+
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("part=a/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part=b/data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+                .Field(new Field("part", new StringType(), false))
+                .Field(new Field("id", new Int32Type(), false))
+                .Field(new Field("x", new FloatType(), false))
+                .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("part", new StringType(), false))
+                .Build());
+
+        var dataset = new DatasetReader(tmpDir.DirectoryPath, partitioning, schema);
+
+        var filter = Col.Named("part").IsEqualTo("a").And(
+            Col.Named("nonexistent").IsEqualTo(123));
+
+        var exception = Assert.Throws<ArgumentException>(() => dataset.ToBatches(filter));
+        Assert.That(exception!.Message, Does.Contain("Invalid field name 'nonexistent'"));
+        Assert.That(exception.ParamName, Is.EqualTo("filter"));
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,

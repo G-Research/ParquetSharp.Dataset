@@ -13,6 +13,11 @@ internal sealed class OrFilter : IFilter
         return _first.IncludePartition(partitionInformation) || _second.IncludePartition(partitionInformation);
     }
 
+    public IEnumerable<string> Columns()
+    {
+        return _first.Columns().Concat(_second.Columns());
+    }
+
     private readonly IFilter _first;
     private readonly IFilter _second;
 }
