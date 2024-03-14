@@ -94,10 +94,10 @@ public sealed class DatasetReader
     /// <summary>
     /// Read a dataset to an Arrow Table
     /// </summary>
-    /// <param name="filter">Optional filter to limit data read</param>
+    /// <param name="filter">Optional filter to limit data rows read</param>
     /// <param name="columns">Names of columns to read</param>
     /// <returns>Dataset data as a table</returns>
-    public async Task<Table> ToTable(Filter? filter = null, IReadOnlyCollection<string>? columns = null)
+    public async Task<Table> ToTable(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
         var arrayStream = ToBatches(filter, columns);
         var batches = new List<RecordBatch>();
@@ -112,10 +112,10 @@ public sealed class DatasetReader
     /// <summary>
     /// Read a dataset to an Arrow RecordBatch stream
     /// </summary>
-    /// <param name="filter">Optional filter to limit data read</param>
+    /// <param name="filter">Optional filter to limit data rows read</param>
     /// <param name="columns">Names of columns to read</param>
     /// <returns>Dataset data as an IArrowArrayStream</returns>
-    public IArrowArrayStream ToBatches(Filter? filter = null, IReadOnlyCollection<string>? columns = null)
+    public IArrowArrayStream ToBatches(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
         Apache.Arrow.Schema schema;
         if (columns == null)

@@ -7,25 +7,9 @@ namespace ParquetSharp.Dataset.Test;
 public class TestFilter
 {
     [Test]
-    public void TestEmptyFilter()
-    {
-        var filter = new Filter.Builder().Build();
-
-        var partitionInfo = new PartitionInformation(
-            new RecordBatch.Builder()
-                .Append("x", nullable: true, new Int64Array.Builder().Append(1))
-                .Build());
-
-        Assert.That(filter.IncludePartition(partitionInfo));
-    }
-
-    [Test]
     public void TestFieldNotInPartitionInfo()
     {
-        var filter = new Filter.Builder()
-            .WithEquality("x", 5)
-            .WithEquality("y", "abc")
-            .Build();
+        var filter = Col.Named("x").IsEqualTo(5).And(Col.Named("y").IsEqualTo("abc"));
 
         var partitionInfo = new PartitionInformation(
             new RecordBatch.Builder()
@@ -38,9 +22,7 @@ public class TestFilter
     [Test]
     public void TestStringEqualityFilter()
     {
-        var filter = new Filter.Builder()
-            .WithEquality("x", "abc")
-            .Build();
+        var filter = Col.Named("x").IsEqualTo("abc");
 
         var partitionInfo = new PartitionInformation(
             new RecordBatch.Builder()
@@ -60,9 +42,7 @@ public class TestFilter
     [Test]
     public void TestStringSetFilter()
     {
-        var filter = new Filter.Builder()
-            .WithInSet("x", new [] {"abc", "def"})
-            .Build();
+        var filter = Col.Named("x").IsIn(new [] {"abc", "def"});
 
         var partitionInfo = new PartitionInformation(
             new RecordBatch.Builder()
@@ -82,17 +62,11 @@ public class TestFilter
     [Test]
     public void TestIntValueFilter()
     {
-        var filter = new Filter.Builder()
-            .WithEquality("x", 2)
-            .Build();
+        var filter = Col.Named("x").IsEqualTo(2);
 
-        var negativeValueFilter = new Filter.Builder()
-            .WithEquality("x", -2)
-            .Build();
+        var negativeValueFilter = Col.Named("x").IsEqualTo(-2);
 
-        var maxInt64Filter = new Filter.Builder()
-            .WithEquality("x", long.MaxValue)
-            .Build();
+        var maxInt64Filter = Col.Named("x").IsEqualTo(long.MaxValue);
 
         foreach (var (value, expected) in new (long?, bool)[]
                  {
@@ -119,9 +93,7 @@ public class TestFilter
     [Test]
     public void TestIntRangeFilter()
     {
-        var filter = new Filter.Builder()
-            .WithRange("x", 2, 5)
-            .Build();
+        var filter = Col.Named("x").IsInRange(2, 5);
 
         foreach (var (value, expected) in new[]
                  {
@@ -139,9 +111,7 @@ public class TestFilter
     [Test]
     public void TestIntRangeFilterCrossingZero()
     {
-        var filter = new Filter.Builder()
-            .WithRange("x", -2, 5)
-            .Build();
+        var filter = Col.Named("x").IsInRange(-2, 5);
 
         foreach (var (value, expected) in new[]
                  {
@@ -171,9 +141,7 @@ public class TestFilter
     [Test]
     public void TestNegativeIntRangeFilter()
     {
-        var filter = new Filter.Builder()
-            .WithRange("x", -5, -2)
-            .Build();
+        var filter = Col.Named("x").IsInRange(-5, -2);
 
         foreach (var value in new [] {0, 1})
         {
@@ -195,7 +163,54 @@ public class TestFilter
         }
     }
 
-    private static void TestIntColumnFilterWithAllTypes(Filter filter, long? value, bool expected)
+    [Test]
+    public void TestAndFilter()
+    {
+        var filter = Col.Named("x").IsEqualTo(3).And(Col.Named("y").IsEqualTo(4));
+
+        foreach (var (xVal, yVal, expected) in new[]
+                 {
+                     (3, 4, true),
+                     (4, 4, false),
+                     (3, 3, false),
+                 })
+        {
+            var partitionInfo = new PartitionInformation(
+                new RecordBatch.Builder()
+                    .Append("x", nullable: true, new Int64Array.Builder().Append(xVal))
+                    .Append("y", nullable: true, new Int64Array.Builder().Append(yVal))
+                    .Append("z", nullable: true, new Int64Array.Builder().Append(100))
+                    .Build());
+
+            Assert.That(filter.IncludePartition(partitionInfo), Is.EqualTo(expected));
+        }
+    }
+
+    [Test]
+    public void TestOrFilter()
+    {
+        var filter = Col.Named("x").IsEqualTo(3).Or(Col.Named("y").IsEqualTo(4));
+
+        foreach (var (xVal, yVal, expected) in new[]
+                 {
+                     (3, 4, true),
+                     (4, 4, true),
+                     (3, 3, true),
+                     (2, 2, false),
+                 })
+        {
+            var partitionInfo = new PartitionInformation(
+                new RecordBatch.Builder()
+                    .Append("x", nullable: true, new Int64Array.Builder().Append(xVal))
+                    .Append("y", nullable: true, new Int64Array.Builder().Append(yVal))
+                    .Append("z", nullable: true, new Int64Array.Builder().Append(100))
+                    .Build());
+
+            Assert.That(filter.IncludePartition(partitionInfo), Is.EqualTo(expected));
+        }
+    }
+
+    private static void TestIntColumnFilterWithAllTypes(IFilter filter, long? value, bool expected)
     {
             TestUInt8ColumnFilter(filter, (byte?) value, expected);
             TestUInt16ColumnFilter(filter, (ushort?) value, expected);
@@ -207,31 +222,31 @@ public class TestFilter
             TestInt64ColumnFilter(filter, (long?) value, expected);
     }
 
-    private static void TestUInt8ColumnFilter(Filter filter, byte? value, bool expected) =>
+    private static void TestUInt8ColumnFilter(IFilter filter, byte? value, bool expected) =>
         TestIntColumnFilter<byte, UInt8Array, UInt8Array.Builder>(filter, value, expected);
 
-    private static void TestUInt16ColumnFilter(Filter filter, ushort? value, bool expected) =>
+    private static void TestUInt16ColumnFilter(IFilter filter, ushort? value, bool expected) =>
         TestIntColumnFilter<ushort, UInt16Array, UInt16Array.Builder>(filter, value, expected);
 
-    private static void TestUInt32ColumnFilter(Filter filter, uint? value, bool expected) =>
+    private static void TestUInt32ColumnFilter(IFilter filter, uint? value, bool expected) =>
         TestIntColumnFilter<uint, UInt32Array, UInt32Array.Builder>(filter, value, expected);
 
-    private static void TestUInt64ColumnFilter(Filter filter, ulong? value, bool expected) =>
+    private static void TestUInt64ColumnFilter(IFilter filter, ulong? value, bool expected) =>
         TestIntColumnFilter<ulong, UInt64Array, UInt64Array.Builder>(filter, value, expected);
 
-    private static void TestInt8ColumnFilter(Filter filter, sbyte? value, bool expected) =>
+    private static void TestInt8ColumnFilter(IFilter filter, sbyte? value, bool expected) =>
         TestIntColumnFilter<sbyte, Int8Array, Int8Array.Builder>(filter, value, expected);
 
-    private static void TestInt16ColumnFilter(Filter filter, short? value, bool expected) =>
+    private static void TestInt16ColumnFilter(IFilter filter, short? value, bool expected) =>
         TestIntColumnFilter<short, Int16Array, Int16Array.Builder>(filter, value, expected);
 
-    private static void TestInt32ColumnFilter(Filter filter, int? value, bool expected) =>
+    private static void TestInt32ColumnFilter(IFilter filter, int? value, bool expected) =>
         TestIntColumnFilter<int, Int32Array, Int32Array.Builder>(filter, value, expected);
 
-    private static void TestInt64ColumnFilter(Filter filter, long? value, bool expected) =>
+    private static void TestInt64ColumnFilter(IFilter filter, long? value, bool expected) =>
         TestIntColumnFilter<long, Int64Array, Int64Array.Builder>(filter, value, expected);
 
-    private static void TestIntColumnFilter<T, TArray, TBuilder>(Filter filter, T? value, bool expected)
+    private static void TestIntColumnFilter<T, TArray, TBuilder>(IFilter filter, T? value, bool expected)
         where T : struct
         where TArray : IArrowArray
         where TBuilder : PrimitiveArrayBuilder<T, TArray, TBuilder>, new()

@@ -26,7 +26,7 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
     public FragmentEnumerator(
         string directory,
         IPartitioning partitioning,
-        Filter? filter = null)
+        IFilter? filter = null)
     {
         _rootDirectory = directory;
         _filter = filter;
@@ -107,7 +107,7 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
     {
     }
 
-    private readonly Filter? _filter;
+    private readonly IFilter? _filter;
     private readonly IPartitioning _partitioning;
     private readonly string _rootDirectory;
     private readonly Queue<string[]> _directoryQueue;

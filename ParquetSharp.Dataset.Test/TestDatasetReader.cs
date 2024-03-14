@@ -66,7 +66,8 @@ public class TestDatasetReader
             new Dictionary<string, int> {{"a", 20}, {"b", 20}});
 
         // Read filtered on partition
-        using var filteredReader = dataset.ToBatches(new Filter.Builder().WithEquality("part", "b").Build());
+        var filter = Col.Named("part").IsEqualTo("b");
+        using var filteredReader = dataset.ToBatches(filter);
         await VerifyData(
             filteredReader,
             new Dictionary<int, int> {{2, 10}, {3, 10}},

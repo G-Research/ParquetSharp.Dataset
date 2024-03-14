@@ -10,7 +10,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         string directory,
         Apache.Arrow.Schema schema,
         IPartitioning partitioning,
-        Filter? filter = null,
+        IFilter? filter = null,
         ReaderProperties? readerProperties = null,
         ArrowReaderProperties? arrowReaderProperties = null)
     {

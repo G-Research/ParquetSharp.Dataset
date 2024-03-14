@@ -1,16 +1,14 @@
-using Apache.Arrow;
+namespace ParquetSharp.Dataset.Filter;
 
-namespace ParquetSharp.Dataset;
-
-internal class Constraint
+internal sealed class ColumnValueFilter : IFilter
 {
-    public Constraint(string columnName, IConstraintEvaluator evaluator)
+    internal ColumnValueFilter(string columnName, IFilterEvaluator evaluator)
     {
         _columnName = columnName;
         _evaluator = evaluator;
     }
 
-    public bool Satisfied(PartitionInformation partitionInfo)
+    public bool IncludePartition(PartitionInformation partitionInfo)
     {
         if (partitionInfo.Batch.Schema.FieldsLookup.Contains(_columnName))
         {
@@ -25,5 +23,5 @@ internal class Constraint
     }
 
     private readonly string _columnName;
-    private readonly IConstraintEvaluator _evaluator;
+    private readonly IFilterEvaluator _evaluator;
 }

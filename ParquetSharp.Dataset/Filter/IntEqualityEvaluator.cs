@@ -1,12 +1,12 @@
 using Apache.Arrow;
 
-namespace ParquetSharp.Dataset.Constraints;
+namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
 /// Tests whether an array contains a single integer equal to a specified value
 /// </summary>
-internal sealed class IntEqualityConstraint
-    : IConstraintEvaluator
+internal sealed class IntEqualityEvaluator
+    : IFilterEvaluator
     , IArrowArrayVisitor<UInt8Array>
     , IArrowArrayVisitor<UInt16Array>
     , IArrowArrayVisitor<UInt32Array>
@@ -16,7 +16,7 @@ internal sealed class IntEqualityConstraint
     , IArrowArrayVisitor<Int32Array>
     , IArrowArrayVisitor<Int64Array>
 {
-    public IntEqualityConstraint(long value)
+    public IntEqualityEvaluator(long value)
     {
         _expectedValue = value;
     }
@@ -68,7 +68,7 @@ internal sealed class IntEqualityConstraint
     public void Visit(IArrowArray array)
     {
         throw new NotImplementedException(
-            $"Integer equality constraint does not support arrays with type {array.Data.DataType.Name}");
+            $"Integer equality filter does not support arrays with type {array.Data.DataType.Name}");
     }
 
     public bool Satisfied { get; private set; }

@@ -1,15 +1,15 @@
 using Apache.Arrow;
 
-namespace ParquetSharp.Dataset.Constraints;
+namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
 /// Tests whether an array contains a single string equal to a specified value
 /// </summary>
-internal sealed class StringInSetConstraint
-    : IConstraintEvaluator
+internal sealed class StringInSetEvaluator
+    : IFilterEvaluator
     , IArrowArrayVisitor<StringArray>
 {
-    public StringInSetConstraint(IReadOnlyCollection<string> values)
+    public StringInSetEvaluator(IReadOnlyCollection<string> values)
     {
         _allowedValues = new HashSet<string>(values);
     }
@@ -22,7 +22,7 @@ internal sealed class StringInSetConstraint
     public void Visit(IArrowArray array)
     {
         throw new NotImplementedException(
-            $"String constraint does not support arrays with type {array.Data.DataType.Name}");
+            $"String filter does not support arrays with type {array.Data.DataType.Name}");
     }
 
     public bool Satisfied { get; private set; }

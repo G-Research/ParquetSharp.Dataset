@@ -135,7 +135,7 @@ public class TestFragmentEnumerator
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var filter = new Filter.Builder().WithRange("x", 0, 100).WithEquality("y", 1).Build();
+        var filter = Col.Named("x").IsInRange(0, 100).And(Col.Named("y").IsEqualTo(1));
 
         var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, partitioning, filter);
 

@@ -1,12 +1,12 @@
 using Apache.Arrow;
 
-namespace ParquetSharp.Dataset.Constraints;
+namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
 /// Tests whether an array contains a single integer within a specified range
 /// </summary>
-internal sealed class IntRangeConstraint
-    : IConstraintEvaluator
+internal sealed class IntRangeEvaluator
+    : IFilterEvaluator
     , IArrowArrayVisitor<UInt8Array>
     , IArrowArrayVisitor<UInt16Array>
     , IArrowArrayVisitor<UInt32Array>
@@ -16,7 +16,7 @@ internal sealed class IntRangeConstraint
     , IArrowArrayVisitor<Int32Array>
     , IArrowArrayVisitor<Int64Array>
 {
-    public IntRangeConstraint(long start, long end)
+    public IntRangeEvaluator(long start, long end)
     {
         _start = start;
         _end = end;
@@ -81,7 +81,7 @@ internal sealed class IntRangeConstraint
     public void Visit(IArrowArray array)
     {
         throw new NotImplementedException(
-            $"Integer range constraint does not support arrays with type {array.Data.DataType.Name}");
+            $"Integer range filter does not support arrays with type {array.Data.DataType.Name}");
     }
 
     public bool Satisfied { get; private set; }
