@@ -72,4 +72,29 @@ public class TestFragmentExpander
             Assert.That(zArray.GetString(i), Is.EqualTo("abc"));
         }
     }
+
+    [Test]
+    public void TestMissingField()
+    {
+        var datasetSchema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("x", new Int32Type(), false))
+            .Field(new Field("y", new Int32Type(), false))
+            .Field(new Field("z", new StringType(), false))
+            .Build();
+
+        var batchLength = 5;
+        var fragmentData = new RecordBatch.Builder()
+            .Append("x", false, new Int32Array.Builder().Append(Enumerable.Range(0, batchLength).ToArray()))
+            .Build();
+
+        var partitionData = new RecordBatch.Builder()
+            .Append("y", false, new Int32Array.Builder().Append(5))
+            .Build();
+
+        var expander = new FragmentExpander(datasetSchema);
+
+        var exception = Assert.Throws<Exception>(
+            () => expander.ExpandBatch(fragmentData, new PartitionInformation(partitionData)));
+        Assert.That(exception!.Message, Does.Contain("'z'"));
+    }
 }

@@ -18,7 +18,8 @@ internal sealed class ColumnValueFilter : IFilter
         }
 
         // Column not in the partition data, assume the constraint may be satisfied
-        // if we're evaluating a partial dataset path.
+        // if we're evaluating a partial dataset path, or the filter applies
+        // to a column in data files.
         return true;
     }
 

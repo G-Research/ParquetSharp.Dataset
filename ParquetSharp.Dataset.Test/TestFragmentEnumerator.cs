@@ -42,7 +42,7 @@ public class TestFragmentEnumerator
         var paths = new[]
         {
             "a/b/c/data0.parquet",
-            "a/b/c/data1.parquet",
+            "a/b/c/data1.PARQUET",
             "a/b/d/data0.parquet",
             "a/b/d/metadata.json",
             "a/b/e/metadata.json",
@@ -58,7 +58,7 @@ public class TestFragmentEnumerator
 
         var filePaths = fragments.Select(f => f.FilePath).ToArray();
         var expectedPaths = paths
-            .Where(p => p.EndsWith(".parquet"))
+            .Where(p => p.EndsWith(".parquet") || p.EndsWith(".PARQUET"))
             .Select(p => Path.Join(tmpDir.DirectoryPath, p)).ToArray();
         Assert.That(filePaths, Is.EquivalentTo(expectedPaths));
         foreach (var fragment in fragments)
@@ -135,7 +135,9 @@ public class TestFragmentEnumerator
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var filter = Col.Named("x").IsInRange(0, 100).And(Col.Named("y").IsEqualTo(1));
+        var filter = Col.Named("x").IsInRange(0, 100)
+            .And(Col.Named("y").IsEqualTo(1))
+            .And(Col.Named("z").IsEqualTo("abc"));
 
         var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, partitioning, filter);
 

@@ -2,6 +2,9 @@ using System.Collections;
 
 namespace ParquetSharp.Dataset;
 
+/// <summary>
+/// A single data file within a dataset
+/// </summary>
 internal sealed class PartitionFragment
 {
     public PartitionFragment(string filePath, PartitionInformation partitionInformation, string[] partitionPath)
@@ -11,15 +14,24 @@ internal sealed class PartitionFragment
         PartitionPath = partitionPath;
     }
 
+    /// <summary>
+    /// Path to the data file
+    /// </summary>
     public string FilePath { get; }
 
+    /// <summary>
+    /// Array of dataset subdirectory names representing the path to the partition directory
+    /// </summary>
     public string[] PartitionPath { get; }
 
+    /// <summary>
+    /// Contains field values from the partitioning
+    /// </summary>
     public PartitionInformation PartitionInformation { get; }
 }
 
 /// <summary>
-/// Enumerator over file paths in a dataset directory
+/// Enumerator over data files in a dataset directory
 /// </summary>
 internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
 {
@@ -66,7 +78,7 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
                 else
                 {
                     // File
-                    if (fsi.Extension.ToLower() == ".parquet")
+                    if (fsi.Extension.Equals(".parquet", StringComparison.OrdinalIgnoreCase))
                     {
                         _fileQueue.Enqueue(fsi.FullName);
                     }

@@ -15,7 +15,7 @@ public sealed class DatasetReader
     /// </summary>
     /// <param name="directory">The root directory of the dataset</param>
     /// <param name="partitioningFactory">Factory for inferring partitioning</param>
-    /// <param name="schema">Optional explicit schema.
+    /// <param name="schema">Optional dataset schema.
     /// If not provided it will be inferred from the partitioning and data file schema</param>
     /// <param name="readerProperties">Optional Parquet reader properties</param>
     /// <param name="arrowReaderProperties">Optional Parquet Arrow reader properties</param>
@@ -52,7 +52,7 @@ public sealed class DatasetReader
     /// </summary>
     /// <param name="directory">The root directory of the dataset</param>
     /// <param name="partitioning">The partitioning to use</param>
-    /// <param name="schema">Optional explicit schema.
+    /// <param name="schema">Optional dataset schema.
     /// If not provided it will be inferred from the partitioning and data file schema</param>
     /// <param name="readerProperties">Optional Parquet reader properties</param>
     /// <param name="arrowReaderProperties">Optional Parquet Arrow reader properties</param>
@@ -94,9 +94,9 @@ public sealed class DatasetReader
     /// <summary>
     /// Read a dataset to an Arrow Table
     /// </summary>
-    /// <param name="filter">Optional filter to limit data rows read</param>
+    /// <param name="filter">Optional filter to limit rows read</param>
     /// <param name="columns">Names of columns to read</param>
-    /// <returns>Dataset data as a table</returns>
+    /// <returns>Selected dataset data as a table</returns>
     public async Task<Table> ToTable(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
         var arrayStream = ToBatches(filter, columns);
@@ -106,15 +106,15 @@ public sealed class DatasetReader
             batches.Add(batch);
         }
 
-        return Table.TableFromRecordBatches(Schema, batches);
+        return Table.TableFromRecordBatches(arrayStream.Schema, batches);
     }
 
     /// <summary>
     /// Read a dataset to an Arrow RecordBatch stream
     /// </summary>
-    /// <param name="filter">Optional filter to limit data rows read</param>
+    /// <param name="filter">Optional filter to limit rows read</param>
     /// <param name="columns">Names of columns to read</param>
-    /// <returns>Dataset data as an IArrowArrayStream</returns>
+    /// <returns>Selected dataset data as an IArrowArrayStream</returns>
     public IArrowArrayStream ToBatches(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
     {
         if (filter != null)
@@ -159,7 +159,8 @@ public sealed class DatasetReader
     {
         // Find the first data file and use it to infer partitioning and/or the data file schema.
         // TODO: Allow using multiple paths, in case subtrees do not all have the same structure
-        // or data files have different fields?
+        // or data files have different fields? May also need this for handling nullable partition
+        // fields if the first path contains a null.
         // May want to use multiple paths for partitioning but only one for data files?
         var fragmentEnumerator = new FragmentEnumerator(directory, new NoPartitioning(), filter: null);
         if (fragmentEnumerator.MoveNext())
@@ -173,6 +174,11 @@ public sealed class DatasetReader
         Apache.Arrow.Schema partitioningSchema,
         Apache.Arrow.Schema dataSchema)
     {
+        if (partitioningSchema.FieldsList.Count == 0)
+        {
+            return dataSchema;
+        }
+
         var builder = new Apache.Arrow.Schema.Builder();
         var partitionFields = new HashSet<string>();
         foreach (var field in partitioningSchema.FieldsList)

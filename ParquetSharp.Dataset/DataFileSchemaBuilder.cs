@@ -15,6 +15,7 @@ internal sealed class DataFileSchemaBuilder
 
     public void Inspect(string filePath)
     {
+        // We currently assume we'll only inspect a single file schema
         using var fileReader = new FileReader(filePath, _readerProperties, _arrowReaderProperties);
         _schema = fileReader.Schema;
     }

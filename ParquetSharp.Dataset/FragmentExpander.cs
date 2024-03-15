@@ -4,13 +4,13 @@ namespace ParquetSharp.Dataset;
 
 /// <summary>
 /// Adds extra columns to record batches as required,
-/// so that their schema matches the full dataset schema.
+/// so that their schema matches the requested schema.
 /// </summary>
 internal sealed class FragmentExpander
 {
-    public FragmentExpander(Apache.Arrow.Schema datasetSchema)
+    public FragmentExpander(Apache.Arrow.Schema resultSchema)
     {
-        _resultSchema = datasetSchema;
+        _resultSchema = resultSchema;
     }
 
     public RecordBatch ExpandBatch(RecordBatch fragmentBatch, PartitionInformation partitionInfo)
@@ -47,7 +47,7 @@ internal sealed class FragmentExpander
             }
             else
             {
-                // TODO: Set to null or default value?
+                // TODO: Set to null or a default value?
                 throw new Exception($"Field '{field.Name}' not found in fragment data or partition information");
             }
         }
