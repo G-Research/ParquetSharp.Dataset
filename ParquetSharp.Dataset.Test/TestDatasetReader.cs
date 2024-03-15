@@ -157,6 +157,32 @@ public class TestDatasetReader
     }
 
     [Test]
+    public async Task TestFilterOnFileColumn()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        using var batch2 = GenerateBatch(2);
+        using var batch3 = GenerateBatch(3);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), new [] {batch0, batch2});
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), new [] {batch1, batch3});
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning(),
+            schema: schema);
+
+        var filter = Col.Named("id").IsInRange(0, 1);
+        using var reader = dataset.ToBatches(filter);
+
+        await VerifyData(reader, new Dictionary<int, int> { { 0, 10 }, { 1, 10 } });
+    }
+
+    [Test]
     public void TestInvalidColumnNameSelected()
     {
         using var tmpDir = new DisposableDirectory();
@@ -661,8 +687,16 @@ public class TestDatasetReader
 
     private static void WriteParquetFile(string path, RecordBatch batch)
     {
-        using var writer = new FileWriter(path, batch.Schema);
-        writer.WriteRecordBatch(batch);
+        WriteParquetFile(path, new[] { batch });
+    }
+
+    private static void WriteParquetFile(string path, IReadOnlyList<RecordBatch> batches)
+    {
+        using var writer = new FileWriter(path, batches[0].Schema);
+        foreach (var batch in batches)
+        {
+            writer.WriteRecordBatch(batch);
+        }
         writer.Close();
     }
 }

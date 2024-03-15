@@ -1,10 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Filter;
 
 internal sealed class ColumnValueFilter : IFilter
 {
-    internal ColumnValueFilter(string columnName, IFilterEvaluator evaluator)
+    internal ColumnValueFilter(string columnName, BaseFilterEvaluator evaluator)
     {
         _columnName = columnName;
         _evaluator = evaluator;
@@ -16,7 +19,7 @@ internal sealed class ColumnValueFilter : IFilter
         {
             var scalarArray = partitionInfo.Batch.Column(_columnName);
             scalarArray.Accept(_evaluator);
-            return _evaluator.Satisfied;
+            return BitUtility.GetBit(_evaluator.FilterResult, 0);
         }
 
         // Column not in the partition data, assume the constraint may be satisfied
@@ -25,11 +28,23 @@ internal sealed class ColumnValueFilter : IFilter
         return true;
     }
 
+    public FilterMask? ComputeMask(RecordBatch dataBatch)
+    {
+        if (dataBatch.Schema.FieldsLookup.Contains(_columnName))
+        {
+            var array = dataBatch.Column(_columnName);
+            array.Accept(_evaluator);
+            return new FilterMask(_evaluator.FilterResult);
+        }
+
+        return null;
+    }
+
     public IEnumerable<string> Columns()
     {
         return new[] { _columnName };
     }
 
     private readonly string _columnName;
-    private readonly IFilterEvaluator _evaluator;
+    private readonly BaseFilterEvaluator _evaluator;
 }

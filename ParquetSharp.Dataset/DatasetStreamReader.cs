@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Apache.Arrow;
 using Apache.Arrow.Ipc;
 using ParquetSharp.Arrow;
+using ParquetSharp.Dataset.Filter;
 
 namespace ParquetSharp.Dataset;
 
@@ -20,6 +21,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         Schema = schema;
         _fragmentEnumerator = new FragmentEnumerator(directory, partitioning, filter);
         _fragmentExpander = new FragmentExpander(schema);
+        _filter = filter;
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
     }
@@ -34,8 +36,9 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
             var nextBatch = await _currentFragmentReader.ReadNextRecordBatchAsync(cancellationToken);
             if (nextBatch != null)
             {
+                var filtered = FilterBatch(nextBatch);
                 return _fragmentExpander.ExpandBatch(
-                    nextBatch, _fragmentEnumerator.Current.PartitionInformation);
+                    filtered, _fragmentEnumerator.Current.PartitionInformation);
             }
             else
             {
@@ -44,6 +47,30 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         }
 
         return null;
+    }
+
+    private RecordBatch FilterBatch(RecordBatch recordBatch)
+    {
+        if (_filter == null)
+        {
+            return recordBatch;
+        }
+
+        var filterMask = _filter.ComputeMask(recordBatch);
+        if (filterMask == null)
+        {
+            return recordBatch;
+        }
+
+        var arrays = new List<IArrowArray>();
+        for (var colIdx = 0; colIdx < recordBatch.ColumnCount; ++colIdx)
+        {
+            var filterApplier = new ArrayMaskApplier(filterMask);
+            recordBatch.Column(colIdx).Accept(filterApplier);
+            arrays.Add(filterApplier.MaskedArray);
+        }
+
+        return new RecordBatch(recordBatch.Schema, arrays, filterMask.IncludedCount);
     }
 
     public void Dispose()
@@ -90,6 +117,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
     public Apache.Arrow.Schema Schema { get; }
 
     private readonly FragmentEnumerator _fragmentEnumerator;
+    private readonly IFilter? _filter;
     private readonly ReaderProperties? _readerProperties;
     private readonly ArrowReaderProperties? _arrowReaderProperties;
     private readonly FragmentExpander _fragmentExpander;

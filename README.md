@@ -84,7 +84,9 @@ var dataset = new DatasetReader("/my-dataset", partitioning, datasetSchema);
 
 When reading data from a dataset, you can specify the columns to include
 and filter rows based on field values.
-Filters may currently only use fields from the partitioning schema:
+Row filters may apply to fields from data files or from the partitioning schema.
+When a filter excludes a partition directory no files from that directory
+will be read.
 
 ```C#
 var columns = new[] {"x", "y"};

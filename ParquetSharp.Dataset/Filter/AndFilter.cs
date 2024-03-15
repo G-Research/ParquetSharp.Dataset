@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Filter;
 
@@ -14,6 +16,11 @@ internal sealed class AndFilter : IFilter
     public bool IncludePartition(PartitionInformation partitionInformation)
     {
         return _first.IncludePartition(partitionInformation) && _second.IncludePartition(partitionInformation);
+    }
+
+    public FilterMask? ComputeMask(RecordBatch dataBatch)
+    {
+        throw new NotImplementedException();
     }
 
     public IEnumerable<string> Columns()

@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Filter;
 
@@ -19,6 +21,11 @@ internal sealed class OrFilter : IFilter
     public IEnumerable<string> Columns()
     {
         return _first.Columns().Concat(_second.Columns());
+    }
+
+    public FilterMask? ComputeMask(RecordBatch dataBatch)
+    {
+        throw new NotImplementedException();
     }
 
     private readonly IFilter _first;

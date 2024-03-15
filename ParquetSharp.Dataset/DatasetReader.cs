@@ -124,10 +124,10 @@ public sealed class DatasetReader
         {
             foreach (var column in filter.Columns())
             {
-                if (!Partitioning.Schema.FieldsLookup.Contains(column))
+                if (!Schema.FieldsLookup.Contains(column))
                 {
                     throw new ArgumentException(
-                        $"Invalid field name '{column}' in filter expression. Filters may only use partitioning fields", nameof(filter));
+                        $"Invalid field name '{column}' in filter expression", nameof(filter));
                 }
             }
         }
