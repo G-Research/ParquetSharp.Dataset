@@ -5,10 +5,16 @@ namespace ParquetSharp.Dataset;
 
 internal sealed class TypeComparer
     : IArrowTypeVisitor
+    , IArrowTypeVisitor<Decimal128Type>
+    , IArrowTypeVisitor<Decimal256Type>
     , IArrowTypeVisitor<DictionaryType>
+    , IArrowTypeVisitor<DurationType>
     , IArrowTypeVisitor<FixedSizeBinaryType>
+    , IArrowTypeVisitor<FixedSizeListType>
     , IArrowTypeVisitor<IntervalType>
     , IArrowTypeVisitor<ListType>
+    , IArrowTypeVisitor<ListViewType>
+    , IArrowTypeVisitor<MapType>
     , IArrowTypeVisitor<StructType>
     , IArrowTypeVisitor<Time32Type>
     , IArrowTypeVisitor<Time64Type>
@@ -86,7 +92,67 @@ internal sealed class TypeComparer
     {
         TypesMatch = _expectedType is UnionType expectedType
                      && type.Mode == expectedType.Mode
-                     && type.TypeCodes.SequenceEqual(expectedType.TypeCodes);
+                     && type.TypeIds.SequenceEqual(expectedType.TypeIds);
+    }
+
+    public void Visit(Decimal128Type type)
+    {
+        TypesMatch = _expectedType is Decimal128Type expectedType
+                     && type.Precision == expectedType.Precision
+                     && type.Scale == expectedType.Scale;
+    }
+
+    public void Visit(Decimal256Type type)
+    {
+        TypesMatch = _expectedType is Decimal256Type expectedType
+                     && type.Precision == expectedType.Precision
+                     && type.Scale == expectedType.Scale;
+    }
+
+    public void Visit(DurationType type)
+    {
+        TypesMatch = _expectedType is DurationType expectedType
+                     && type.Unit == expectedType.Unit;
+    }
+
+    public void Visit(FixedSizeListType type)
+    {
+        if (_expectedType is FixedSizeListType expectedType && type.ListSize == expectedType.ListSize)
+        {
+            var valueComparer = new TypeComparer(expectedType.ValueDataType);
+            type.ValueDataType.Accept(valueComparer);
+            TypesMatch = valueComparer.TypesMatch;
+        }
+
+        TypesMatch = false;
+    }
+
+    public void Visit(ListViewType type)
+    {
+        if (_expectedType is ListViewType expectedType)
+        {
+            var valueComparer = new TypeComparer(expectedType.ValueDataType);
+            type.ValueDataType.Accept(valueComparer);
+            TypesMatch = valueComparer.TypesMatch;
+        }
+
+        TypesMatch = false;
+    }
+
+    public void Visit(MapType type)
+    {
+        if (_expectedType is MapType expectedType)
+        {
+            var keyComparer = new TypeComparer(expectedType.KeyField.DataType);
+            var valueComparer = new TypeComparer(expectedType.ValueField.DataType);
+            type.KeyField.DataType.Accept(keyComparer);
+            type.ValueField.DataType.Accept(valueComparer);
+            TypesMatch = keyComparer.TypesMatch
+                             && valueComparer.TypesMatch
+                             && type.KeySorted == expectedType.KeySorted;
+        }
+
+        TypesMatch = false;
     }
 
     public void Visit(IArrowType type)
