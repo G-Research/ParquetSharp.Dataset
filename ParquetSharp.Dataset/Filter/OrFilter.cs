@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace ParquetSharp.Dataset.Filter;
 
 internal sealed class OrFilter : IFilter

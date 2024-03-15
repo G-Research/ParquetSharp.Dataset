@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Filter;

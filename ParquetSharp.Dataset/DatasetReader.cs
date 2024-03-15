@@ -1,4 +1,7 @@
-﻿using Apache.Arrow;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Apache.Arrow;
 using Apache.Arrow.Ipc;
 using ParquetSharp.Arrow;
 using ParquetSharp.Dataset.Partitioning;

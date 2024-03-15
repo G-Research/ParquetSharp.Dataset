@@ -1,3 +1,4 @@
+using System;
 using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Filter;

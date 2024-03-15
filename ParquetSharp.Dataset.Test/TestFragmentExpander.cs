@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Apache.Arrow;
 using Apache.Arrow.Types;
 using NUnit.Framework;

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ParquetSharp.Dataset;
 
 /// <summary>

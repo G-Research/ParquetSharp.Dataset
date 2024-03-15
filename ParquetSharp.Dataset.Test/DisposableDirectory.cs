@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+
 namespace ParquetSharp.Dataset.Test;
 
 internal sealed class DisposableDirectory : IDisposable

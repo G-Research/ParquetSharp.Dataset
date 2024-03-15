@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Web;
 using Apache.Arrow;
 using Apache.Arrow.Types;
