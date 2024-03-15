@@ -1,5 +1,8 @@
 # ParquetSharp.Dataset
 
+[![CI Status](https://github.com/G-Research/ParquetSharp.Dataset/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/G-Research/ParquetSharp.Dataset/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+[![NuGet latest release](https://img.shields.io/nuget/v/ParquetSharp.Dataset.svg)](https://www.nuget.org/packages/ParquetSharp.Dataset)
+
 **This is a work in progress and is not yet ready for public use**
 
 ParquetSharp.Dataset supports reading datasets consisting of multiple Parquet files,

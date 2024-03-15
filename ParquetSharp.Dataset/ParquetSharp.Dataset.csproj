@@ -2,9 +2,29 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>10.0</LangVersion>
+    <AssemblyName>ParquetSharp.Dataset</AssemblyName>
+    <RootNamespace>ParquetSharp.Dataset</RootNamespace>
     <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Version>0.1.0-beta1</Version>
+    <Company>G-Research</Company>
+    <Authors>G-Research</Authors>
+    <Product>ParquetSharp.Dataset</Product>
+    <Description>ParquetSharp.Dataset is a .NET library for reading datasets consisting of multiple Parquet files.</Description>
+    <Copyright>Copyright G-Research</Copyright>
+    <PackageProjectUrl>https://github.com/G-Research/ParquetSharp.Dataset</PackageProjectUrl>
+    <PackageTags>dataset apache parquet hive partitioned partitioning gresearch g-research .net c#</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/G-Research/ParquetSharp.Dataset</RepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup Label="Additional nuget files">
+    <None Include="../LICENSE" Pack="true" PackagePath="\" />
+    <None Include="../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ParquetSharp" Version="14.0.2" />
