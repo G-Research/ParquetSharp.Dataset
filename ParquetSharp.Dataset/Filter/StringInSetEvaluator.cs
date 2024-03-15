@@ -9,7 +9,7 @@ namespace ParquetSharp.Dataset.Filter;
 /// </summary>
 internal sealed class StringInSetEvaluator
     : IFilterEvaluator
-    , IArrowArrayVisitor<StringArray>
+        , IArrowArrayVisitor<StringArray>
 {
     public StringInSetEvaluator(IReadOnlyCollection<string> values, string columnName)
     {

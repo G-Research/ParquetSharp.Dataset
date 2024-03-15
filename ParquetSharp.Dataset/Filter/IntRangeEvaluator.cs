@@ -8,14 +8,14 @@ namespace ParquetSharp.Dataset.Filter;
 /// </summary>
 internal sealed class IntRangeEvaluator
     : IFilterEvaluator
-    , IArrowArrayVisitor<UInt8Array>
-    , IArrowArrayVisitor<UInt16Array>
-    , IArrowArrayVisitor<UInt32Array>
-    , IArrowArrayVisitor<UInt64Array>
-    , IArrowArrayVisitor<Int8Array>
-    , IArrowArrayVisitor<Int16Array>
-    , IArrowArrayVisitor<Int32Array>
-    , IArrowArrayVisitor<Int64Array>
+        , IArrowArrayVisitor<UInt8Array>
+        , IArrowArrayVisitor<UInt16Array>
+        , IArrowArrayVisitor<UInt32Array>
+        , IArrowArrayVisitor<UInt64Array>
+        , IArrowArrayVisitor<Int8Array>
+        , IArrowArrayVisitor<Int16Array>
+        , IArrowArrayVisitor<Int32Array>
+        , IArrowArrayVisitor<Int64Array>
 {
     public IntRangeEvaluator(long start, long end, string columnName)
     {
@@ -27,32 +27,32 @@ internal sealed class IntRangeEvaluator
     public void Visit(UInt8Array array)
     {
         var value = array.GetValue(0);
-        var geStart = _start < 0 || value >= (ulong) _start;
-        var leEnd = _end >= 0 && value <= (ulong) _end;
+        var geStart = _start < 0 || value >= (ulong)_start;
+        var leEnd = _end >= 0 && value <= (ulong)_end;
         Satisfied = geStart && leEnd;
     }
 
     public void Visit(UInt16Array array)
     {
         var value = array.GetValue(0);
-        var geStart = _start < 0 || value >= (ulong) _start;
-        var leEnd = _end >= 0 && value <= (ulong) _end;
+        var geStart = _start < 0 || value >= (ulong)_start;
+        var leEnd = _end >= 0 && value <= (ulong)_end;
         Satisfied = geStart && leEnd;
     }
 
     public void Visit(UInt32Array array)
     {
         var value = array.GetValue(0);
-        var geStart = _start < 0 || value >= (ulong) _start;
-        var leEnd = _end >= 0 && value <= (ulong) _end;
+        var geStart = _start < 0 || value >= (ulong)_start;
+        var leEnd = _end >= 0 && value <= (ulong)_end;
         Satisfied = geStart && leEnd;
     }
 
     public void Visit(UInt64Array array)
     {
         var value = array.GetValue(0);
-        var geStart = _start < 0 || value >= (ulong) _start;
-        var leEnd = _end >= 0 && value <= (ulong) _end;
+        var geStart = _start < 0 || value >= (ulong)_start;
+        var leEnd = _end >= 0 && value <= (ulong)_end;
         Satisfied = geStart && leEnd;
     }
 

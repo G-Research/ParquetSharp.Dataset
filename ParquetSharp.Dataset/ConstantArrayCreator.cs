@@ -8,14 +8,14 @@ namespace ParquetSharp.Dataset;
 /// </summary>
 internal sealed class ConstantArrayCreator
     : IArrowArrayVisitor<UInt8Array>
-    , IArrowArrayVisitor<UInt16Array>
-    , IArrowArrayVisitor<UInt32Array>
-    , IArrowArrayVisitor<UInt64Array>
-    , IArrowArrayVisitor<Int8Array>
-    , IArrowArrayVisitor<Int16Array>
-    , IArrowArrayVisitor<Int32Array>
-    , IArrowArrayVisitor<Int64Array>
-    , IArrowArrayVisitor<StringArray>
+        , IArrowArrayVisitor<UInt16Array>
+        , IArrowArrayVisitor<UInt32Array>
+        , IArrowArrayVisitor<UInt64Array>
+        , IArrowArrayVisitor<Int8Array>
+        , IArrowArrayVisitor<Int16Array>
+        , IArrowArrayVisitor<Int32Array>
+        , IArrowArrayVisitor<Int64Array>
+        , IArrowArrayVisitor<StringArray>
 {
     public ConstantArrayCreator(int arrayLength)
     {
@@ -94,9 +94,9 @@ internal sealed class ConstantArrayCreator
     }
 
     private void VisitPrimitiveArray<T, TArray, TBuilder>(TArray array)
-        where T: struct
-        where TArray: PrimitiveArray<T>
-        where TBuilder: PrimitiveArrayBuilder<T, TArray, TBuilder>, new()
+        where T : struct
+        where TArray : PrimitiveArray<T>
+        where TBuilder : PrimitiveArrayBuilder<T, TArray, TBuilder>, new()
     {
         var builder = new TBuilder();
         builder.Reserve(_arrayLength);

@@ -88,6 +88,7 @@ public sealed class HivePartitioning : IPartitioning
                     throw new ArgumentException(
                         $"Found null value for non-nullable partition field '{fieldName}'", nameof(pathComponents));
                 }
+
                 fieldValue = null;
             }
 

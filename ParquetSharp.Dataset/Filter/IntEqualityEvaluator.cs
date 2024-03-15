@@ -8,14 +8,14 @@ namespace ParquetSharp.Dataset.Filter;
 /// </summary>
 internal sealed class IntEqualityEvaluator
     : IFilterEvaluator
-    , IArrowArrayVisitor<UInt8Array>
-    , IArrowArrayVisitor<UInt16Array>
-    , IArrowArrayVisitor<UInt32Array>
-    , IArrowArrayVisitor<UInt64Array>
-    , IArrowArrayVisitor<Int8Array>
-    , IArrowArrayVisitor<Int16Array>
-    , IArrowArrayVisitor<Int32Array>
-    , IArrowArrayVisitor<Int64Array>
+        , IArrowArrayVisitor<UInt8Array>
+        , IArrowArrayVisitor<UInt16Array>
+        , IArrowArrayVisitor<UInt32Array>
+        , IArrowArrayVisitor<UInt64Array>
+        , IArrowArrayVisitor<Int8Array>
+        , IArrowArrayVisitor<Int16Array>
+        , IArrowArrayVisitor<Int32Array>
+        , IArrowArrayVisitor<Int64Array>
 {
     public IntEqualityEvaluator(long value, string columnName)
     {
@@ -38,13 +38,13 @@ internal sealed class IntEqualityEvaluator
     public void Visit(UInt32Array array)
     {
         var value = array.GetValue(0);
-        Satisfied = _expectedValue > 0 && value == (ulong) _expectedValue;
+        Satisfied = _expectedValue > 0 && value == (ulong)_expectedValue;
     }
 
     public void Visit(UInt64Array array)
     {
         var value = array.GetValue(0);
-        Satisfied = _expectedValue > 0 && value == (ulong) _expectedValue;
+        Satisfied = _expectedValue > 0 && value == (ulong)_expectedValue;
     }
 
     public void Visit(Int8Array array)

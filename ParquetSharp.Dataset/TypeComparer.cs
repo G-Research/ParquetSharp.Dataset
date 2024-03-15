@@ -7,21 +7,21 @@ namespace ParquetSharp.Dataset;
 
 internal sealed class TypeComparer
     : IArrowTypeVisitor
-    , IArrowTypeVisitor<Decimal128Type>
-    , IArrowTypeVisitor<Decimal256Type>
-    , IArrowTypeVisitor<DictionaryType>
-    , IArrowTypeVisitor<DurationType>
-    , IArrowTypeVisitor<FixedSizeBinaryType>
-    , IArrowTypeVisitor<FixedSizeListType>
-    , IArrowTypeVisitor<IntervalType>
-    , IArrowTypeVisitor<ListType>
-    , IArrowTypeVisitor<ListViewType>
-    , IArrowTypeVisitor<MapType>
-    , IArrowTypeVisitor<StructType>
-    , IArrowTypeVisitor<Time32Type>
-    , IArrowTypeVisitor<Time64Type>
-    , IArrowTypeVisitor<TimestampType>
-    , IArrowTypeVisitor<UnionType>
+        , IArrowTypeVisitor<Decimal128Type>
+        , IArrowTypeVisitor<Decimal256Type>
+        , IArrowTypeVisitor<DictionaryType>
+        , IArrowTypeVisitor<DurationType>
+        , IArrowTypeVisitor<FixedSizeBinaryType>
+        , IArrowTypeVisitor<FixedSizeListType>
+        , IArrowTypeVisitor<IntervalType>
+        , IArrowTypeVisitor<ListType>
+        , IArrowTypeVisitor<ListViewType>
+        , IArrowTypeVisitor<MapType>
+        , IArrowTypeVisitor<StructType>
+        , IArrowTypeVisitor<Time32Type>
+        , IArrowTypeVisitor<Time64Type>
+        , IArrowTypeVisitor<TimestampType>
+        , IArrowTypeVisitor<UnionType>
 {
     public TypeComparer(IArrowType expectedType)
     {
@@ -39,8 +39,8 @@ internal sealed class TypeComparer
             type.IndexType.Accept(indexComparer);
             type.ValueType.Accept(valueComparer);
             TypesMatch = indexComparer.TypesMatch
-                             && valueComparer.TypesMatch
-                             && type.Ordered == expectedType.Ordered;
+                         && valueComparer.TypesMatch
+                         && type.Ordered == expectedType.Ordered;
         }
         else
         {
@@ -158,8 +158,8 @@ internal sealed class TypeComparer
             type.KeyField.DataType.Accept(keyComparer);
             type.ValueField.DataType.Accept(valueComparer);
             TypesMatch = keyComparer.TypesMatch
-                             && valueComparer.TypesMatch
-                             && type.KeySorted == expectedType.KeySorted;
+                         && valueComparer.TypesMatch
+                         && type.KeySorted == expectedType.KeySorted;
         }
         else
         {

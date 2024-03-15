@@ -34,9 +34,9 @@ internal sealed class ScalarParser :
     {
         var builder = new UInt8Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(byte.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(byte.Parse(_value)))
             .Build();
     }
 
@@ -44,9 +44,9 @@ internal sealed class ScalarParser :
     {
         var builder = new UInt16Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(ushort.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(ushort.Parse(_value)))
             .Build();
     }
 
@@ -54,9 +54,9 @@ internal sealed class ScalarParser :
     {
         var builder = new UInt32Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(uint.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(uint.Parse(_value)))
             .Build();
     }
 
@@ -64,9 +64,9 @@ internal sealed class ScalarParser :
     {
         var builder = new UInt64Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(ulong.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(ulong.Parse(_value)))
             .Build();
     }
 
@@ -74,9 +74,9 @@ internal sealed class ScalarParser :
     {
         var builder = new Int8Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(sbyte.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(sbyte.Parse(_value)))
             .Build();
     }
 
@@ -84,9 +84,9 @@ internal sealed class ScalarParser :
     {
         var builder = new Int16Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(short.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(short.Parse(_value)))
             .Build();
     }
 
@@ -94,9 +94,9 @@ internal sealed class ScalarParser :
     {
         var builder = new Int32Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(int.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(int.Parse(_value)))
             .Build();
     }
 
@@ -104,9 +104,9 @@ internal sealed class ScalarParser :
     {
         var builder = new Int64Array.Builder();
         ScalarArray = (
-            _value == null
-                ? builder.AppendNull()
-                : builder.Append(long.Parse(_value)))
+                _value == null
+                    ? builder.AppendNull()
+                    : builder.Append(long.Parse(_value)))
             .Build();
     }
 

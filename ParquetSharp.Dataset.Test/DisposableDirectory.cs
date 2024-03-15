@@ -48,6 +48,7 @@ internal sealed class DisposableDirectory : IDisposable
         {
             Directory.CreateDirectory(dir);
         }
+
         return absPath;
     }
 

@@ -83,6 +83,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
                 columnIndices.Add(fileSchema.GetFieldIndex(field.Name));
             }
         }
+
         return columnIndices.ToArray();
     }
 

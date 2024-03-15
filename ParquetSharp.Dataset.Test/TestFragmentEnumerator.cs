@@ -26,7 +26,7 @@ public class TestFragmentEnumerator
     public void TestNoParquetFiles()
     {
         using var tmpDir = new DisposableDirectory();
-        tmpDir.CreateTree(new []
+        tmpDir.CreateTree(new[]
         {
             "a/b/c.txt",
             "d/e.txt",
@@ -76,12 +76,12 @@ public class TestFragmentEnumerator
         using var tmpDir = new DisposableDirectory();
         var testData = new Dictionary<string, (int X, int Y)>
         {
-            {"x=0/y=0/data0.parquet", (0, 0)},
-            {"x=0/y=1/data0.parquet", (0, 1)},
-            {"x=1/y=0/data0.parquet", (1, 0)},
-            {"x=1/y=1/data0.parquet", (1, 1)},
-            {"x=1/y=1/data1.parquet", (1, 1)},
-            {"y=0/x=1/data0.parquet", (1, 0)}, // reversed order of fields
+            { "x=0/y=0/data0.parquet", (0, 0) },
+            { "x=0/y=1/data0.parquet", (0, 1) },
+            { "x=1/y=0/data0.parquet", (1, 0) },
+            { "x=1/y=1/data0.parquet", (1, 1) },
+            { "x=1/y=1/data1.parquet", (1, 1) },
+            { "y=0/x=1/data0.parquet", (1, 0) }, // reversed order of fields
         };
         var paths = testData.Keys.ToArray();
         tmpDir.CreateTree(paths);
@@ -122,12 +122,12 @@ public class TestFragmentEnumerator
         using var tmpDir = new DisposableDirectory();
         var testData = new Dictionary<string, (int X, int Y, bool Included)>
         {
-            {"x=0/y=0/data0.parquet", (0, 0, false)},
-            {"x=0/y=1/data0.parquet", (0, 1, true)},
-            {"x=1/y=0/data0.parquet", (1, 0, false)},
-            {"x=1/y=1/data0.parquet", (1, 1, true)},
-            {"x=1/y=1/data1.parquet", (1, 1, true)},
-            {"y=0/x=1/data0.parquet", (1, 0, false)},
+            { "x=0/y=0/data0.parquet", (0, 0, false) },
+            { "x=0/y=1/data0.parquet", (0, 1, true) },
+            { "x=1/y=0/data0.parquet", (1, 0, false) },
+            { "x=1/y=1/data0.parquet", (1, 1, true) },
+            { "x=1/y=1/data1.parquet", (1, 1, true) },
+            { "y=0/x=1/data0.parquet", (1, 0, false) },
         };
         var paths = testData.Keys.ToArray();
         tmpDir.CreateTree(paths);

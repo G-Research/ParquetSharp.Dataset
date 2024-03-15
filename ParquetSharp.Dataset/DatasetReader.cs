@@ -131,6 +131,7 @@ public sealed class DatasetReader
                 }
             }
         }
+
         Apache.Arrow.Schema schema;
         if (columns == null)
         {
@@ -146,11 +147,13 @@ public sealed class DatasetReader
                 {
                     throw new ArgumentException($"Invalid column name '{columnName}'", nameof(columns));
                 }
+
                 schemaBuilder.Field(field);
             }
 
             schema = schemaBuilder.Build();
         }
+
         return new DatasetStreamReader(
             _directory, schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
     }
@@ -189,14 +192,17 @@ public sealed class DatasetReader
             partitionFields.Add(field.Name);
             builder.Field(field);
         }
+
         foreach (var field in dataSchema.FieldsList)
         {
             if (partitionFields.Contains(field.Name))
             {
                 throw new Exception($"Duplicate field name '{field.Name}' found in partition schema and data file schema");
             }
+
             builder.Field(field);
         }
+
         // Metadata is currently ignored
         return builder.Build();
     }

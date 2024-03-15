@@ -37,7 +37,7 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsEqualTo(this Col column, string value)
     {
-        return new ColumnValueFilter(column.Name, new StringInSetEvaluator(new [] {value}, column.Name));
+        return new ColumnValueFilter(column.Name, new StringInSetEvaluator(new[] { value }, column.Name));
     }
 
     /// <summary>

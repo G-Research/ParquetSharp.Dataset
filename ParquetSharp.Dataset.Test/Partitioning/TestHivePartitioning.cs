@@ -28,7 +28,7 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(new [] {"x=3"}).Batch;
+        var subsetData = partitioning.Parse(new[] { "x=3" }).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -46,7 +46,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         // Should respect type even if this value can be interpreted as int
-        var subsetData = partitioning.Parse(new [] {"x=3"}).Batch;
+        var subsetData = partitioning.Parse(new[] { "x=3" }).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -65,7 +65,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         // Should respect type even if this value can be interpreted as int
-        var subsetData = partitioning.Parse(new [] {"y=hello", "x=4"}).Batch;
+        var subsetData = partitioning.Parse(new[] { "y=hello", "x=4" }).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(2));
@@ -87,7 +87,7 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(new [] {"x=__HIVE_DEFAULT_PARTITION__"}).Batch;
+        var subsetData = partitioning.Parse(new[] { "x=__HIVE_DEFAULT_PARTITION__" }).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -105,7 +105,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         var exception = Assert.Throws<ArgumentException>(
-            () => partitioning.Parse(new[] {"x=__HIVE_DEFAULT_PARTITION__"}));
+            () => partitioning.Parse(new[] { "x=__HIVE_DEFAULT_PARTITION__" }));
         Assert.That(exception!.ParamName, Is.EqualTo("pathComponents"));
     }
 
@@ -116,7 +116,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         var exception = Assert.Throws<ArgumentException>(
-            () => partitioning.Parse(new[] {"column=value"}));
+            () => partitioning.Parse(new[] { "column=value" }));
         Assert.That(exception!.ParamName, Is.EqualTo("pathComponents"));
     }
 
@@ -129,7 +129,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         var exception = Assert.Throws<ArgumentException>(
-            () => partitioning.Parse(new[] {"y=3"}));
+            () => partitioning.Parse(new[] { "y=3" }));
         Assert.That(exception!.ParamName, Is.EqualTo("pathComponents"));
         Assert.That(exception.Message, Does.Contain("'y'"));
     }
@@ -143,7 +143,7 @@ public class TestHivePartitioning
         var partitioning = new HivePartitioning(partitioningSchema);
 
         var exception = Assert.Throws<Exception>(
-            () => partitioning.Parse(new[] {"x3"}));
+            () => partitioning.Parse(new[] { "x3" }));
         Assert.That(exception!.Message, Does.Contain("'x3'"));
     }
 
@@ -155,7 +155,7 @@ public class TestHivePartitioning
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var subsetData = partitioning.Parse(new [] {"x%20%3d%23%21%2f=%3a%3b%2b%27%22"}).Batch;
+        var subsetData = partitioning.Parse(new[] { "x%20%3d%23%21%2f=%3a%3b%2b%27%22" }).Batch;
 
         Assert.That(subsetData.Length, Is.EqualTo(1));
         Assert.That(subsetData.Schema.FieldsList.Count, Is.EqualTo(1));
@@ -168,7 +168,7 @@ public class TestHivePartitioning
     public void TestBuildHivePartitioning()
     {
         var factory = new HivePartitioning.Factory();
-        factory.Inspect(new [] {"x=3", "y=4", "z=hello"});
+        factory.Inspect(new[] { "x=3", "y=4", "z=hello" });
         var partitioning = factory.Build();
 
         var schema = partitioning.Schema;
@@ -191,7 +191,7 @@ public class TestHivePartitioning
     public void TestBuildHivePartitioningWithDatasetSchema()
     {
         var factory = new HivePartitioning.Factory();
-        factory.Inspect(new [] {"x=3", "y=4", "z=hello"});
+        factory.Inspect(new[] { "x=3", "y=4", "z=hello" });
 
         var datasetSchema = new Apache.Arrow.Schema.Builder()
             .Field(new Field("x", new Int64Type(), false))
@@ -222,7 +222,7 @@ public class TestHivePartitioning
     public void TestBuildHivePartitioningWithMissingField()
     {
         var factory = new HivePartitioning.Factory();
-        factory.Inspect(new [] {"x=3", "y=4", "z=hello"});
+        factory.Inspect(new[] { "x=3", "y=4", "z=hello" });
 
         var datasetSchema = new Apache.Arrow.Schema.Builder()
             .Field(new Field("x", new Int64Type(), false))

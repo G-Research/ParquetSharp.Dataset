@@ -27,7 +27,7 @@ internal sealed class ColumnValueFilter : IFilter
 
     public IEnumerable<string> Columns()
     {
-        return new[] {_columnName};
+        return new[] { _columnName };
     }
 
     private readonly string _columnName;

@@ -42,7 +42,7 @@ public class TestFilter
     [Test]
     public void TestStringSetFilter()
     {
-        var filter = Col.Named("x").IsIn(new [] {"abc", "def"});
+        var filter = Col.Named("x").IsIn(new[] { "abc", "def" });
 
         var partitionInfo = new PartitionInformation(
             new RecordBatch.Builder()
@@ -131,10 +131,10 @@ public class TestFilter
                      (-1, true),
                  })
         {
-            TestInt8ColumnFilter(filter, (sbyte) value, expected);
-            TestInt16ColumnFilter(filter, (short) value, expected);
-            TestInt32ColumnFilter(filter, (int) value, expected);
-            TestInt64ColumnFilter(filter, (long) value, expected);
+            TestInt8ColumnFilter(filter, (sbyte)value, expected);
+            TestInt16ColumnFilter(filter, (short)value, expected);
+            TestInt32ColumnFilter(filter, (int)value, expected);
+            TestInt64ColumnFilter(filter, (long)value, expected);
         }
     }
 
@@ -143,7 +143,7 @@ public class TestFilter
     {
         var filter = Col.Named("x").IsInRange(-5, -2);
 
-        foreach (var value in new [] {0, 1})
+        foreach (var value in new[] { 0, 1 })
         {
             TestIntColumnFilterWithAllTypes(filter, value, false);
         }
@@ -156,10 +156,10 @@ public class TestFilter
                      (-1, false),
                  })
         {
-            TestInt8ColumnFilter(filter, (sbyte) value, expected);
-            TestInt16ColumnFilter(filter, (short) value, expected);
-            TestInt32ColumnFilter(filter, (int) value, expected);
-            TestInt64ColumnFilter(filter, (long) value, expected);
+            TestInt8ColumnFilter(filter, (sbyte)value, expected);
+            TestInt16ColumnFilter(filter, (short)value, expected);
+            TestInt32ColumnFilter(filter, (int)value, expected);
+            TestInt64ColumnFilter(filter, (long)value, expected);
         }
     }
 
@@ -212,14 +212,14 @@ public class TestFilter
 
     private static void TestIntColumnFilterWithAllTypes(IFilter filter, long? value, bool expected)
     {
-            TestUInt8ColumnFilter(filter, (byte?) value, expected);
-            TestUInt16ColumnFilter(filter, (ushort?) value, expected);
-            TestUInt32ColumnFilter(filter, (uint?) value, expected);
-            TestUInt64ColumnFilter(filter, (ulong?) value, expected);
-            TestInt8ColumnFilter(filter, (sbyte?) value, expected);
-            TestInt16ColumnFilter(filter, (short?) value, expected);
-            TestInt32ColumnFilter(filter, (int?) value, expected);
-            TestInt64ColumnFilter(filter, (long?) value, expected);
+        TestUInt8ColumnFilter(filter, (byte?)value, expected);
+        TestUInt16ColumnFilter(filter, (ushort?)value, expected);
+        TestUInt32ColumnFilter(filter, (uint?)value, expected);
+        TestUInt64ColumnFilter(filter, (ulong?)value, expected);
+        TestInt8ColumnFilter(filter, (sbyte?)value, expected);
+        TestInt16ColumnFilter(filter, (short?)value, expected);
+        TestInt32ColumnFilter(filter, (int?)value, expected);
+        TestInt64ColumnFilter(filter, (long?)value, expected);
     }
 
     private static void TestUInt8ColumnFilter(IFilter filter, byte? value, bool expected) =>
@@ -260,6 +260,7 @@ public class TestFilter
         {
             builder.AppendNull();
         }
+
         var partitionInfo = new PartitionInformation(
             new RecordBatch.Builder()
                 .Append("x", nullable: true, builder)
