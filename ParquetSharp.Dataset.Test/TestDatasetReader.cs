@@ -522,6 +522,53 @@ public class TestDatasetReader
         Assert.That(exception.ParamName, Is.EqualTo("filter"));
     }
 
+    [Test]
+    public void TestInvalidFilterType()
+    {
+        using var tmpDir = new DisposableDirectory();
+
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("part=a/part_id=123/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part=b/part_id=456/data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+                .Field(new Field("part", new StringType(), false))
+                .Field(new Field("part_id", new Int32Type(), false))
+                .Field(new Field("id", new Int32Type(), false))
+                .Field(new Field("x", new FloatType(), false))
+                .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("part", new StringType(), false))
+                .Field(new Field("part_id", new Int32Type(), false))
+                .Build());
+
+        var dataset = new DatasetReader(tmpDir.DirectoryPath, partitioning, schema);
+
+        var filters = new []
+        {
+            (Col.Named("part").IsEqualTo(3), "part"),
+            (Col.Named("part").IsInRange(1, 5), "part"),
+            (Col.Named("part_id").IsEqualTo("abc"), "part_id"),
+        };
+
+        foreach (var (filter, expectedColumn) in filters)
+        {
+            using var reader = dataset.ToBatches(filter);
+            var exception = Assert.ThrowsAsync<NotSupportedException>(async () =>
+            {
+                while (await reader.ReadNextRecordBatchAsync() is { } batch)
+                {
+                    using (batch)
+                    {
+                    }
+                }
+            });
+            Assert.That(exception!.Message, Does.Contain($"'{expectedColumn}'"));
+        }
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,

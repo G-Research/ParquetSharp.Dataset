@@ -12,7 +12,7 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsEqualTo(this Col column, long value)
     {
-        return new ColumnValueFilter(column.Name, new IntEqualityEvaluator(value));
+        return new ColumnValueFilter(column.Name, new IntEqualityEvaluator(value, column.Name));
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsInRange(this Col column, long start, long end)
     {
-        return new ColumnValueFilter(column.Name, new IntRangeEvaluator(start, end));
+        return new ColumnValueFilter(column.Name, new IntRangeEvaluator(start, end, column.Name));
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsEqualTo(this Col column, string value)
     {
-        return new ColumnValueFilter(column.Name, new StringInSetEvaluator(new [] {value}));
+        return new ColumnValueFilter(column.Name, new StringInSetEvaluator(new [] {value}, column.Name));
     }
 
     /// <summary>
@@ -46,6 +46,6 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsIn(this Col column, IReadOnlyList<string> values)
     {
-        return new ColumnValueFilter(column.Name, new StringInSetEvaluator(values));
+        return new ColumnValueFilter(column.Name, new StringInSetEvaluator(values, column.Name));
     }
 }

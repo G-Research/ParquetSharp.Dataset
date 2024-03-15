@@ -16,9 +16,10 @@ internal sealed class IntEqualityEvaluator
     , IArrowArrayVisitor<Int32Array>
     , IArrowArrayVisitor<Int64Array>
 {
-    public IntEqualityEvaluator(long value)
+    public IntEqualityEvaluator(long value, string columnName)
     {
         _expectedValue = value;
+        _columnName = columnName;
     }
 
     public void Visit(UInt8Array array)
@@ -67,11 +68,12 @@ internal sealed class IntEqualityEvaluator
 
     public void Visit(IArrowArray array)
     {
-        throw new NotImplementedException(
-            $"Integer equality filter does not support arrays with type {array.Data.DataType.Name}");
+        throw new NotSupportedException(
+            $"Integer equality filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
     }
 
     public bool Satisfied { get; private set; }
 
     private readonly long _expectedValue;
+    private readonly string _columnName;
 }

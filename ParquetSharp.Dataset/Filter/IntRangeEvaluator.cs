@@ -16,10 +16,11 @@ internal sealed class IntRangeEvaluator
     , IArrowArrayVisitor<Int32Array>
     , IArrowArrayVisitor<Int64Array>
 {
-    public IntRangeEvaluator(long start, long end)
+    public IntRangeEvaluator(long start, long end, string columnName)
     {
         _start = start;
         _end = end;
+        _columnName = columnName;
     }
 
     public void Visit(UInt8Array array)
@@ -80,12 +81,13 @@ internal sealed class IntRangeEvaluator
 
     public void Visit(IArrowArray array)
     {
-        throw new NotImplementedException(
-            $"Integer range filter does not support arrays with type {array.Data.DataType.Name}");
+        throw new NotSupportedException(
+            $"Integer range filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
     }
 
     public bool Satisfied { get; private set; }
 
     private readonly long _start;
     private readonly long _end;
+    private readonly string _columnName;
 }
