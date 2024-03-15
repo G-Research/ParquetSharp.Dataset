@@ -44,15 +44,15 @@ public class TestFragmentEnumerator
         using var tmpDir = new DisposableDirectory();
         var paths = new[]
         {
-            "a/b/c/data0.parquet",
-            "a/b/c/data1.PARQUET",
-            "a/b/d/data0.parquet",
-            "a/b/d/metadata.json",
-            "a/b/e/metadata.json",
-            "a/b/data0.parquet",
-            "data0.parquet",
-            "data1.parquet",
-            "data.txt",
+            Path.Join("a", "b", "c", "data0.parquet"),
+            Path.Join("a", "b", "c", "data1.PARQUET"),
+            Path.Join("a", "b", "d", "data0.parquet"),
+            Path.Join("a", "b", "d", "metadata.json"),
+            Path.Join("a", "b", "e", "metadata.json"),
+            Path.Join("a", "b", "data0.parquet"),
+            Path.Join("data0.parquet"),
+            Path.Join("data1.parquet"),
+            Path.Join("data.txt"),
         };
         tmpDir.CreateTree(paths);
         var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning());
@@ -76,12 +76,12 @@ public class TestFragmentEnumerator
         using var tmpDir = new DisposableDirectory();
         var testData = new Dictionary<string, (int X, int Y)>
         {
-            { "x=0/y=0/data0.parquet", (0, 0) },
-            { "x=0/y=1/data0.parquet", (0, 1) },
-            { "x=1/y=0/data0.parquet", (1, 0) },
-            { "x=1/y=1/data0.parquet", (1, 1) },
-            { "x=1/y=1/data1.parquet", (1, 1) },
-            { "y=0/x=1/data0.parquet", (1, 0) }, // reversed order of fields
+            { Path.Join("x=0", "y=0", "data0.parquet"), (0, 0) },
+            { Path.Join("x=0", "y=1", "data0.parquet"), (0, 1) },
+            { Path.Join("x=1", "y=0", "data0.parquet"), (1, 0) },
+            { Path.Join("x=1", "y=1", "data0.parquet"), (1, 1) },
+            { Path.Join("x=1", "y=1", "data1.parquet"), (1, 1) },
+            { Path.Join("y=0", "x=1", "data0.parquet"), (1, 0) }, // reversed order of fields
         };
         var paths = testData.Keys.ToArray();
         tmpDir.CreateTree(paths);
@@ -122,12 +122,12 @@ public class TestFragmentEnumerator
         using var tmpDir = new DisposableDirectory();
         var testData = new Dictionary<string, (int X, int Y, bool Included)>
         {
-            { "x=0/y=0/data0.parquet", (0, 0, false) },
-            { "x=0/y=1/data0.parquet", (0, 1, true) },
-            { "x=1/y=0/data0.parquet", (1, 0, false) },
-            { "x=1/y=1/data0.parquet", (1, 1, true) },
-            { "x=1/y=1/data1.parquet", (1, 1, true) },
-            { "y=0/x=1/data0.parquet", (1, 0, false) },
+            { Path.Join("x=0", "y=0", "data0.parquet"), (0, 0, false) },
+            { Path.Join("x=0", "y=1", "data0.parquet"), (0, 1, true) },
+            { Path.Join("x=1", "y=0", "data0.parquet"), (1, 0, false) },
+            { Path.Join("x=1", "y=1", "data0.parquet"), (1, 1, true) },
+            { Path.Join("x=1", "y=1", "data1.parquet"), (1, 1, true) },
+            { Path.Join("y=0", "x=1", "data0.parquet"), (1, 0, false) },
         };
         var paths = testData.Keys.ToArray();
         tmpDir.CreateTree(paths);
