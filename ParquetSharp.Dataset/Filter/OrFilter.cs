@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apache.Arrow;
@@ -25,7 +24,23 @@ internal sealed class OrFilter : IFilter
 
     public FilterMask? ComputeMask(RecordBatch dataBatch)
     {
-        throw new NotImplementedException();
+        var firstMask = _first.ComputeMask(dataBatch);
+        var secondMask = _second.ComputeMask(dataBatch);
+        if (firstMask == null || secondMask == null)
+        {
+            return null;
+        }
+
+        var numBytes = BitUtility.ByteCount(dataBatch.Length);
+        var combined = new byte[numBytes];
+        var firstSpan = firstMask.Mask.Span;
+        var secondSpan = secondMask.Mask.Span;
+        for (var byteIdx = 0; byteIdx < numBytes; ++byteIdx)
+        {
+            combined[byteIdx] = (byte)(firstSpan[byteIdx] | secondSpan[byteIdx]);
+        }
+
+        return new FilterMask(combined);
     }
 
     private readonly IFilter _first;

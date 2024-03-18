@@ -1,64 +1,11 @@
 using Apache.Arrow;
 using NUnit.Framework;
 
-namespace ParquetSharp.Dataset.Test;
+namespace ParquetSharp.Dataset.Test.Filter;
 
 [TestFixture]
-public class TestFilter
+public class TestIntFilter
 {
-    [Test]
-    public void TestFieldNotInPartitionInfo()
-    {
-        var filter = Col.Named("x").IsEqualTo(5).And(Col.Named("y").IsEqualTo("abc"));
-
-        var partitionInfo = new PartitionInformation(
-            new RecordBatch.Builder()
-                .Append("z", nullable: true, new Int64Array.Builder().Append(1))
-                .Build());
-
-        Assert.That(filter.IncludePartition(partitionInfo));
-    }
-
-    [Test]
-    public void TestStringEqualityFilter()
-    {
-        var filter = Col.Named("x").IsEqualTo("abc");
-
-        var partitionInfo = new PartitionInformation(
-            new RecordBatch.Builder()
-                .Append("x", nullable: true, new StringArray.Builder().Append("abc"))
-                .Build());
-
-        Assert.That(filter.IncludePartition(partitionInfo));
-
-        partitionInfo = new PartitionInformation(
-            new RecordBatch.Builder()
-                .Append("x", nullable: true, new StringArray.Builder().Append("def"))
-                .Build());
-
-        Assert.That(filter.IncludePartition(partitionInfo), Is.False);
-    }
-
-    [Test]
-    public void TestStringSetFilter()
-    {
-        var filter = Col.Named("x").IsIn(new[] { "abc", "def" });
-
-        var partitionInfo = new PartitionInformation(
-            new RecordBatch.Builder()
-                .Append("x", nullable: true, new StringArray.Builder().Append("def"))
-                .Build());
-
-        Assert.That(filter.IncludePartition(partitionInfo));
-
-        partitionInfo = new PartitionInformation(
-            new RecordBatch.Builder()
-                .Append("x", nullable: true, new StringArray.Builder().Append("ghi"))
-                .Build());
-
-        Assert.That(filter.IncludePartition(partitionInfo), Is.False);
-    }
-
     [Test]
     public void TestIntValueFilter()
     {
@@ -160,53 +107,6 @@ public class TestFilter
             TestInt16ColumnFilter(filter, (short)value, expected);
             TestInt32ColumnFilter(filter, (int)value, expected);
             TestInt64ColumnFilter(filter, (long)value, expected);
-        }
-    }
-
-    [Test]
-    public void TestAndFilter()
-    {
-        var filter = Col.Named("x").IsEqualTo(3).And(Col.Named("y").IsEqualTo(4));
-
-        foreach (var (xVal, yVal, expected) in new[]
-                 {
-                     (3, 4, true),
-                     (4, 4, false),
-                     (3, 3, false),
-                 })
-        {
-            var partitionInfo = new PartitionInformation(
-                new RecordBatch.Builder()
-                    .Append("x", nullable: true, new Int64Array.Builder().Append(xVal))
-                    .Append("y", nullable: true, new Int64Array.Builder().Append(yVal))
-                    .Append("z", nullable: true, new Int64Array.Builder().Append(100))
-                    .Build());
-
-            Assert.That(filter.IncludePartition(partitionInfo), Is.EqualTo(expected));
-        }
-    }
-
-    [Test]
-    public void TestOrFilter()
-    {
-        var filter = Col.Named("x").IsEqualTo(3).Or(Col.Named("y").IsEqualTo(4));
-
-        foreach (var (xVal, yVal, expected) in new[]
-                 {
-                     (3, 4, true),
-                     (4, 4, true),
-                     (3, 3, true),
-                     (2, 2, false),
-                 })
-        {
-            var partitionInfo = new PartitionInformation(
-                new RecordBatch.Builder()
-                    .Append("x", nullable: true, new Int64Array.Builder().Append(xVal))
-                    .Append("y", nullable: true, new Int64Array.Builder().Append(yVal))
-                    .Append("z", nullable: true, new Int64Array.Builder().Append(100))
-                    .Build());
-
-            Assert.That(filter.IncludePartition(partitionInfo), Is.EqualTo(expected));
         }
     }
 
