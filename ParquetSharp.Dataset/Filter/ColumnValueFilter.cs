@@ -7,10 +7,14 @@ namespace ParquetSharp.Dataset.Filter;
 
 internal sealed class ColumnValueFilter : IFilter
 {
-    internal ColumnValueFilter(string columnName, BaseFilterEvaluator evaluator)
+    internal ColumnValueFilter(
+        string columnName,
+        BaseFilterEvaluator evaluator,
+        BaseStatisticsEvaluator? statsEvaluator = null)
     {
         _columnName = columnName;
         _evaluator = evaluator;
+        _statsEvaluator = statsEvaluator;
     }
 
     public bool IncludePartition(PartitionInformation partitionInfo)
@@ -25,6 +29,17 @@ internal sealed class ColumnValueFilter : IFilter
         // Column not in the partition data, assume the constraint may be satisfied
         // if we're evaluating a partial dataset path, or the filter applies
         // to a column in data files.
+        return true;
+    }
+
+    public bool IncludeRowGroup(IReadOnlyDictionary<string, LogicalStatistics> columnStatistics)
+    {
+        if (columnStatistics.TryGetValue(_columnName, out var statistics))
+        {
+            return _statsEvaluator?.IncludeRowGroup(statistics) ?? true;
+        }
+
+        // Filter column is not a Parquet column or does not have statistics
         return true;
     }
 
@@ -47,4 +62,5 @@ internal sealed class ColumnValueFilter : IFilter
 
     private readonly string _columnName;
     private readonly BaseFilterEvaluator _evaluator;
+    private readonly BaseStatisticsEvaluator? _statsEvaluator;
 }

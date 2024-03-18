@@ -17,6 +17,11 @@ internal sealed class OrFilter : IFilter
         return _first.IncludePartition(partitionInformation) || _second.IncludePartition(partitionInformation);
     }
 
+    public bool IncludeRowGroup(IReadOnlyDictionary<string, LogicalStatistics> columnStatistics)
+    {
+        return _first.IncludeRowGroup(columnStatistics) || _second.IncludeRowGroup(columnStatistics);
+    }
+
     public IEnumerable<string> Columns()
     {
         return _first.Columns().Concat(_second.Columns());

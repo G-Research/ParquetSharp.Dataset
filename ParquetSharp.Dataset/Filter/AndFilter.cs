@@ -17,6 +17,11 @@ internal sealed class AndFilter : IFilter
         return _first.IncludePartition(partitionInformation) && _second.IncludePartition(partitionInformation);
     }
 
+    public bool IncludeRowGroup(IReadOnlyDictionary<string, LogicalStatistics> columnStatistics)
+    {
+        return _first.IncludeRowGroup(columnStatistics) && _second.IncludeRowGroup(columnStatistics);
+    }
+
     public FilterMask? ComputeMask(RecordBatch dataBatch)
     {
         var firstMask = _first.ComputeMask(dataBatch);

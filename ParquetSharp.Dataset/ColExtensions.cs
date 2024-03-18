@@ -14,7 +14,8 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsEqualTo(this Col column, long value)
     {
-        return new ColumnValueFilter(column.Name, new IntEqualityEvaluator(value, column.Name));
+        return new ColumnValueFilter(
+            column.Name, new IntEqualityEvaluator(value, column.Name), new IntEqualityStatisticsEvaluator(value));
     }
 
     /// <summary>
@@ -26,7 +27,8 @@ public static class ColExtensions
     /// <returns>Created filter</returns>
     public static IFilter IsInRange(this Col column, long start, long end)
     {
-        return new ColumnValueFilter(column.Name, new IntRangeEvaluator(start, end, column.Name));
+        return new ColumnValueFilter(
+            column.Name, new IntRangeEvaluator(start, end, column.Name), new IntRangeStatisticsEvaluator(start, end));
     }
 
     /// <summary>

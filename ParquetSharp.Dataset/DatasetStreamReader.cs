@@ -26,9 +26,11 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
         _requiredFields = new HashSet<string>(schema.FieldsList.Select(f => f.Name));
+        _rowGroupSelector = null;
         if (_filter != null)
         {
             _requiredFields.UnionWith(_filter.Columns());
+            _rowGroupSelector = new RowGroupSelector(_filter);
         }
     }
 
@@ -73,7 +75,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         }
 
         var filterMask = _filter.ComputeMask(recordBatch);
-        if (filterMask == null)
+        if (filterMask == null || filterMask.IncludedCount == recordBatch.Length)
         {
             return recordBatch;
         }
@@ -109,8 +111,12 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         {
             _currentFileReader = new FileReader(
                 _fragmentEnumerator.Current.FilePath, _readerProperties, _arrowReaderProperties);
+
+            var rowGroups = _rowGroupSelector?.GetRequiredRowGroups(_currentFileReader);
             var columnIndices = GetFileColumnIndices(_currentFileReader);
-            _currentFragmentReader = _currentFileReader.GetRecordBatchReader(columns: columnIndices);
+
+            _currentFragmentReader = _currentFileReader.GetRecordBatchReader(
+                rowGroups: rowGroups, columns: columnIndices);
         }
         else
         {
@@ -141,6 +147,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
     private readonly ReaderProperties? _readerProperties;
     private readonly ArrowReaderProperties? _arrowReaderProperties;
     private readonly FragmentExpander _fragmentExpander;
+    private readonly RowGroupSelector? _rowGroupSelector;
     private readonly HashSet<string> _requiredFields;
     private IArrowArrayStream? _currentFragmentReader = null;
     private FileReader? _currentFileReader = null;

@@ -17,6 +17,13 @@ public interface IFilter
     bool IncludePartition(PartitionInformation partitionInformation);
 
     /// <summary>
+    /// Whether to read data for a Parquet row group
+    /// </summary>
+    /// <param name="columnStatistics">Dictionary of statistics for the filter columns, keyed by name</param>
+    /// <returns>True if the row group should be read</returns>
+    bool IncludeRowGroup(IReadOnlyDictionary<string, LogicalStatistics> columnStatistics);
+
+    /// <summary>
     /// Compute a boolean mask indicating which rows in a batch should
     /// be included. Can return null to indicate that all rows are included.
     /// </summary>
