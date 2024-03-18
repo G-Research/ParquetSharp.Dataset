@@ -164,8 +164,8 @@ public class TestDatasetReader
         using var batch1 = GenerateBatch(1);
         using var batch2 = GenerateBatch(2);
         using var batch3 = GenerateBatch(3);
-        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), new [] {batch0, batch2});
-        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), new [] {batch1, batch3});
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), new[] { batch0, batch2 });
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), new[] { batch1, batch3 });
 
         var schema = new Apache.Arrow.Schema.Builder()
             .Field(new Field("id", new Int32Type(), false))
@@ -180,6 +180,52 @@ public class TestDatasetReader
         using var reader = dataset.ToBatches(filter);
 
         await VerifyData(reader, new Dictionary<int, int> { { 0, 10 }, { 1, 10 } });
+    }
+
+    [Test]
+    public async Task TestFilterOnExcludedFileColumn()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        using var batch2 = GenerateBatch(2);
+        using var batch3 = GenerateBatch(3);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), new[] { batch0, batch2 });
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), new[] { batch1, batch3 });
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning(),
+            schema: schema);
+
+        // Filter on id column, but don't include it in the resulting record batch data
+        var filter = Col.Named("id").IsEqualTo(0);
+        var columns = new[] { "x" };
+        using var reader = dataset.ToBatches(filter, columns);
+
+        var batchCount = 0;
+        while (await reader.ReadNextRecordBatchAsync() is { } batch)
+        {
+            ++batchCount;
+            using (batch)
+            {
+                Assert.That(batch.ColumnCount, Is.EqualTo(1));
+                var xCol = batch.Column("x") as FloatArray;
+                Assert.That(xCol, Is.Not.Null);
+                Assert.That(xCol!.Length, Is.EqualTo(10));
+                for (var i = 0; i < xCol.Length; ++i)
+                {
+                    Assert.That(xCol.GetValue(i), Is.GreaterThanOrEqualTo(0.0f));
+                    Assert.That(xCol.GetValue(i), Is.LessThan(1.0f));
+                }
+            }
+        }
+
+        Assert.That(batchCount, Is.EqualTo(1));
     }
 
     [Test]
@@ -697,6 +743,7 @@ public class TestDatasetReader
         {
             writer.WriteRecordBatch(batch);
         }
+
         writer.Close();
     }
 }
