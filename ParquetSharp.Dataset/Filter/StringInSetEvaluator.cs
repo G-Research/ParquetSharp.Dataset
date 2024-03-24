@@ -9,10 +9,10 @@ namespace ParquetSharp.Dataset.Filter;
 /// </summary>
 internal sealed class StringInSetEvaluator : BaseFilterEvaluator, IArrowArrayVisitor<StringArray>
 {
-    public StringInSetEvaluator(IReadOnlyCollection<string> values, string columnName)
+    public StringInSetEvaluator(IReadOnlyCollection<string?> values, string columnName)
     {
         _columnName = columnName;
-        _allowedValues = new HashSet<string>(values);
+        _allowedValues = new HashSet<string?>(values);
     }
 
     public void Visit(StringArray array)
@@ -32,6 +32,6 @@ internal sealed class StringInSetEvaluator : BaseFilterEvaluator, IArrowArrayVis
             $"String filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
     }
 
-    private readonly HashSet<string> _allowedValues;
+    private readonly HashSet<string?> _allowedValues;
     private readonly string _columnName;
 }

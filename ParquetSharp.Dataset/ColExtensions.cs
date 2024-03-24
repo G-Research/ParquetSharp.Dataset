@@ -35,7 +35,7 @@ public static class ColExtensions
     /// <param name="column">The column to add the condition on</param>
     /// <param name="value">The value to filter on</param>
     /// <returns>Created filter</returns>
-    public static IFilter IsEqualTo(this Col column, string value)
+    public static IFilter IsEqualTo(this Col column, string? value)
     {
         return new ColumnValueFilter(column.Name, new StringInSetEvaluator(new[] { value }, column.Name));
     }
@@ -46,7 +46,7 @@ public static class ColExtensions
     /// <param name="column">The column to add the condition on</param>
     /// <param name="values">The values to filter on</param>
     /// <returns>Created filter</returns>
-    public static IFilter IsIn(this Col column, IReadOnlyList<string> values)
+    public static IFilter IsIn(this Col column, IReadOnlyList<string?> values)
     {
         return new ColumnValueFilter(column.Name, new StringInSetEvaluator(values, column.Name));
     }
