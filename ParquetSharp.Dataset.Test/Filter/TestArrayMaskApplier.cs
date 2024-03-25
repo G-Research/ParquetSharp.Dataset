@@ -163,6 +163,7 @@ public class TestArrayMaskApplier
                 new BinaryArray.Builder(), numRows, random,
                 (builder, rand) => builder.Append(RandomBytes(rand).AsSpan())),
             BuildDictionaryArray(numRows, random),
+            BuildListArray(numRows, random),
         };
     }
 
@@ -255,6 +256,37 @@ public class TestArrayMaskApplier
         return new DictionaryArray(dataType, indicesArray, dictionaryArray);
     }
 
+    private static IArrowArray BuildListArray(int numRows, Random random)
+    {
+        var builder = new ListArray.Builder(new Int64Type());
+        var valueBuilder = (Int64Array.Builder)builder.ValueBuilder;
+        for (var rowIdx = 0; rowIdx < numRows; ++rowIdx)
+        {
+            if (random.NextDouble() < 0.1)
+            {
+                builder.AppendNull();
+            }
+            else
+            {
+                builder.Append();
+                var listLength = random.NextInt64(0, 10);
+                for (var itemIdx = 0; itemIdx < listLength; ++itemIdx)
+                {
+                    if (random.NextDouble() < 0.1)
+                    {
+                        valueBuilder.AppendNull();
+                    }
+                    else
+                    {
+                        valueBuilder.Append(random.NextInt64(-100, 100));
+                    }
+                }
+            }
+        }
+
+        return builder.Build();
+    }
+
     private sealed class MaskedArrayValidator : IArrowArrayVisitor
         , IArrowArrayVisitor<UInt8Array>
         , IArrowArrayVisitor<UInt16Array>
@@ -278,11 +310,13 @@ public class TestArrayMaskApplier
         , IArrowArrayVisitor<StringArray>
         , IArrowArrayVisitor<BinaryArray>
         , IArrowArrayVisitor<DictionaryArray>
+        , IArrowArrayVisitor<ListArray>
     {
-        public MaskedArrayValidator(IArrowArray sourceArray, FilterMask mask)
+        public MaskedArrayValidator(IArrowArray sourceArray, FilterMask? mask)
         {
             _sourceArray = sourceArray;
             _mask = mask;
+            _expectedLength = mask?.IncludedCount ?? sourceArray.Length;
         }
 
         public void Visit(UInt8Array array) => VisitPrimitiveArray<byte, UInt8Array>(array);
@@ -335,17 +369,45 @@ public class TestArrayMaskApplier
                     $"Masked array ({array}) does not have the same type as the source array ({_sourceArray})");
             }
 
-            var fullMask = new byte[BitUtility.ByteCount(sourceArray.Dictionary.Length)];
-            for (var i = 0; i < sourceArray.Dictionary.Length; ++i)
-            {
-                BitUtility.SetBit(fullMask, i, true);
-            }
-
-            var dictValidator = new MaskedArrayValidator(sourceArray.Dictionary, new FilterMask(fullMask));
+            var dictValidator = new MaskedArrayValidator(sourceArray.Dictionary, mask: null);
             array.Dictionary.Accept(dictValidator);
 
             var indicesValidator = new MaskedArrayValidator(sourceArray.Indices, _mask);
             array.Indices.Accept(indicesValidator);
+        }
+
+        public void Visit(ListArray array)
+        {
+            if (_sourceArray is not ListArray sourceArray)
+            {
+                throw new Exception(
+                    $"Masked array ({array}) does not have the same type as the source array ({_sourceArray})");
+            }
+
+            Assert.That(array.Length, Is.EqualTo(_expectedLength));
+
+            var outputIndex = 0;
+            for (var i = 0; i < sourceArray.Length; ++i)
+            {
+                if (_mask == null || BitUtility.GetBit(_mask.Mask.Span, i))
+                {
+                    var sourceList = sourceArray.GetSlicedValues(i);
+                    var outputList = array.GetSlicedValues(outputIndex);
+                    if (sourceList == null)
+                    {
+                        Assert.That(outputList, Is.Null);
+                    }
+                    else
+                    {
+                        var listValidator = new MaskedArrayValidator(sourceList, mask: null);
+                        outputList.Accept(listValidator);
+                    }
+
+                    outputIndex++;
+                }
+            }
+
+            Assert.That(outputIndex, Is.EqualTo(_expectedLength));
         }
 
         public void Visit(IArrowArray array)
@@ -369,12 +431,12 @@ public class TestArrayMaskApplier
                     $"Masked array ({array}) does not have the same type as the source array ({_sourceArray})");
             }
 
-            Assert.That(array.Length, Is.EqualTo(_mask.IncludedCount));
+            Assert.That(array.Length, Is.EqualTo(_expectedLength));
 
             var outputIndex = 0;
             for (var i = 0; i < sourceArray.Length; ++i)
             {
-                if (BitUtility.GetBit(_mask.Mask.Span, i))
+                if (_mask == null || BitUtility.GetBit(_mask.Mask.Span, i))
                 {
                     var sourceValue = getter(sourceArray, i);
                     var outputValue = getter(array, outputIndex);
@@ -384,10 +446,11 @@ public class TestArrayMaskApplier
                 }
             }
 
-            Assert.That(outputIndex, Is.EqualTo(_mask.IncludedCount));
+            Assert.That(outputIndex, Is.EqualTo(_expectedLength));
         }
 
         private readonly IArrowArray _sourceArray;
-        private readonly FilterMask _mask;
+        private readonly FilterMask? _mask;
+        private readonly int _expectedLength;
     }
 }

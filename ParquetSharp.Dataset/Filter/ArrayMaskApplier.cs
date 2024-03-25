@@ -33,6 +33,7 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<BinaryArray>
     , IArrowArrayVisitor<FixedSizeBinaryArray>
     , IArrowArrayVisitor<DictionaryArray>
+    , IArrowArrayVisitor<ListArray>
 {
     public ArrayMaskApplier(FilterMask mask)
     {
@@ -128,6 +129,50 @@ public class ArrayMaskApplier :
         array.Indices.Accept(indicesVisitor);
         var indicesArray = indicesVisitor.MaskedArray;
         _maskedArray = new DictionaryArray((DictionaryType)array.Data.DataType, indicesArray, array.Dictionary);
+    }
+
+    public void Visit(ListArray array)
+    {
+        var valuesMaskBuilder = new ArrowBuffer.BitmapBuilder(array.Values.Length);
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+        var valueOffsetsBuilder = new ArrowBuffer.Builder<int>(_includedCount + 1);
+
+        valueOffsetsBuilder.Append(0);
+
+        var outputValuesOffset = 0;
+        var inputValuesOffset = array.ValueOffsets[0];
+        if (inputValuesOffset > 0)
+        {
+            valuesMaskBuilder.AppendRange(false, inputValuesOffset);
+        }
+
+        for (var i = 0; i < array.Length; ++i)
+        {
+            var included = BitUtility.GetBit(_mask.Span, i);
+            var nextOffset = array.ValueOffsets[i + 1];
+            var length = nextOffset - inputValuesOffset;
+            if (length > 0)
+            {
+                valuesMaskBuilder.AppendRange(included, length);
+            }
+
+            inputValuesOffset = nextOffset;
+
+            if (included)
+            {
+                validityBuffer.Append(array.IsValid(i));
+                outputValuesOffset += length;
+                valueOffsetsBuilder.Append(outputValuesOffset);
+            }
+        }
+
+        var valuesMaskApplier = new ArrayMaskApplier(valuesMaskBuilder.Build().Memory, valuesMaskBuilder.SetBitCount);
+        array.Values.Accept(valuesMaskApplier);
+        var valuesArray = valuesMaskApplier.MaskedArray;
+
+        _maskedArray = new ListArray(
+            array.Data.DataType, _includedCount, valueOffsetsBuilder.Build(), valuesArray, validityBuffer.Build(),
+            nullCount: validityBuffer.UnsetBitCount, offset: 0);
     }
 
     public void Visit(IArrowArray array)
