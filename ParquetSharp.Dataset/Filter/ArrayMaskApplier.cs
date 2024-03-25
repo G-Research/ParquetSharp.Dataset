@@ -32,6 +32,7 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<StringArray>
     , IArrowArrayVisitor<BinaryArray>
     , IArrowArrayVisitor<FixedSizeBinaryArray>
+    , IArrowArrayVisitor<NullArray>
     , IArrowArrayVisitor<DictionaryArray>
     , IArrowArrayVisitor<ListArray>
 {
@@ -106,6 +107,11 @@ public class ArrayMaskApplier :
     public void Visit(FixedSizeBinaryArray array) => VisitFixedSizeBinaryArray<FixedSizeBinaryArray>(array, arrayData => new FixedSizeBinaryArray(arrayData));
 
     public void Visit(BinaryArray array) => VisitBinaryArray<BinaryArray>(array, arrayData => new BinaryArray(arrayData));
+
+    public void Visit(NullArray array)
+    {
+        _maskedArray = new NullArray(_includedCount);
+    }
 
     public void Visit(BooleanArray array)
     {

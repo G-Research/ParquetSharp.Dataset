@@ -162,6 +162,9 @@ public class TestArrayMaskApplier
             BuildArray<BinaryArray, BinaryArray.Builder>(
                 new BinaryArray.Builder(), numRows, random,
                 (builder, rand) => builder.Append(RandomBytes(rand).AsSpan())),
+            BuildArray<NullArray, NullArray.Builder>(
+                new NullArray.Builder(), numRows, random,
+                (builder, _) => builder.AppendNull()),
             BuildDictionaryArray(numRows, random),
             BuildListArray(numRows, random),
         };
@@ -309,6 +312,7 @@ public class TestArrayMaskApplier
         , IArrowArrayVisitor<Decimal256Array>
         , IArrowArrayVisitor<StringArray>
         , IArrowArrayVisitor<BinaryArray>
+        , IArrowArrayVisitor<NullArray>
         , IArrowArrayVisitor<DictionaryArray>
         , IArrowArrayVisitor<ListArray>
     {
@@ -360,6 +364,8 @@ public class TestArrayMaskApplier
         public void Visit(StringArray array) => VisitArray(array, (arr, idx) => arr.GetString(idx));
 
         public void Visit(BinaryArray array) => VisitArray(array, (arr, idx) => arr.GetBytes(idx).ToArray());
+
+        public void Visit(NullArray array) => VisitArray(array, (_, _) => (object?)null);
 
         public void Visit(DictionaryArray array)
         {
