@@ -32,6 +32,7 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<StringArray>
     , IArrowArrayVisitor<BinaryArray>
     , IArrowArrayVisitor<FixedSizeBinaryArray>
+    , IArrowArrayVisitor<DictionaryArray>
 {
     public ArrayMaskApplier(FilterMask mask)
     {
@@ -42,6 +43,12 @@ public class ArrayMaskApplier :
 
         _mask = mask.Mask;
         _includedCount = mask.IncludedCount;
+    }
+
+    private ArrayMaskApplier(ReadOnlyMemory<byte> mask, int includedCount)
+    {
+        _mask = mask;
+        _includedCount = includedCount;
     }
 
     public IArrowArray MaskedArray
@@ -113,6 +120,14 @@ public class ArrayMaskApplier :
         }
 
         _maskedArray = builder.Build();
+    }
+
+    public void Visit(DictionaryArray array)
+    {
+        var indicesVisitor = new ArrayMaskApplier(_mask, _includedCount);
+        array.Indices.Accept(indicesVisitor);
+        var indicesArray = indicesVisitor.MaskedArray;
+        _maskedArray = new DictionaryArray((DictionaryType)array.Data.DataType, indicesArray, array.Dictionary);
     }
 
     public void Visit(IArrowArray array)

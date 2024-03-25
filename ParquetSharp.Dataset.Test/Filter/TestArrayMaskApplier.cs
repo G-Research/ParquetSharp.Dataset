@@ -36,7 +36,6 @@ public class TestArrayMaskApplier
             masked.Data.DataType.Accept(typeComparer);
             Assert.That(typeComparer.TypesMatch, $"Masked array type {masked.Data.DataType} does not match source type {array.Data.DataType}");
 
-            Assert.That(masked.Length, Is.EqualTo(mask.IncludedCount));
             var validator = new MaskedArrayValidator(array, mask);
             masked.Accept(validator);
         }
@@ -163,6 +162,7 @@ public class TestArrayMaskApplier
             BuildArray<BinaryArray, BinaryArray.Builder>(
                 new BinaryArray.Builder(), numRows, random,
                 (builder, rand) => builder.Append(RandomBytes(rand).AsSpan())),
+            BuildDictionaryArray(numRows, random),
         };
     }
 
@@ -246,6 +246,15 @@ public class TestArrayMaskApplier
         return builder.Build(default);
     }
 
+    private static IArrowArray BuildDictionaryArray(int numRows, Random random)
+    {
+        var dictionaryArray = new StringArray.Builder().AppendRange(RandomStrings).Build();
+        var indicesArray = BuildArray<byte, UInt8Array, UInt8Array.Builder>(
+            new UInt8Array.Builder(), numRows, random, rand => (byte)rand.NextInt64(0, dictionaryArray.Length));
+        var dataType = new DictionaryType(indicesArray.Data.DataType, dictionaryArray.Data.DataType, ordered: true);
+        return new DictionaryArray(dataType, indicesArray, dictionaryArray);
+    }
+
     private sealed class MaskedArrayValidator : IArrowArrayVisitor
         , IArrowArrayVisitor<UInt8Array>
         , IArrowArrayVisitor<UInt16Array>
@@ -268,6 +277,7 @@ public class TestArrayMaskApplier
         , IArrowArrayVisitor<Decimal256Array>
         , IArrowArrayVisitor<StringArray>
         , IArrowArrayVisitor<BinaryArray>
+        , IArrowArrayVisitor<DictionaryArray>
     {
         public MaskedArrayValidator(IArrowArray sourceArray, FilterMask mask)
         {
@@ -317,6 +327,27 @@ public class TestArrayMaskApplier
 
         public void Visit(BinaryArray array) => VisitArray(array, (arr, idx) => arr.GetBytes(idx).ToArray());
 
+        public void Visit(DictionaryArray array)
+        {
+            if (_sourceArray is not DictionaryArray sourceArray)
+            {
+                throw new Exception(
+                    $"Masked array ({array}) does not have the same type as the source array ({_sourceArray})");
+            }
+
+            var fullMask = new byte[BitUtility.ByteCount(sourceArray.Dictionary.Length)];
+            for (var i = 0; i < sourceArray.Dictionary.Length; ++i)
+            {
+                BitUtility.SetBit(fullMask, i, true);
+            }
+
+            var dictValidator = new MaskedArrayValidator(sourceArray.Dictionary, new FilterMask(fullMask));
+            array.Dictionary.Accept(dictValidator);
+
+            var indicesValidator = new MaskedArrayValidator(sourceArray.Indices, _mask);
+            array.Indices.Accept(indicesValidator);
+        }
+
         public void Visit(IArrowArray array)
         {
             throw new NotImplementedException($"Masked array validation not implemented for type {array.Data.DataType}");
@@ -337,6 +368,8 @@ public class TestArrayMaskApplier
                 throw new Exception(
                     $"Masked array ({array}) does not have the same type as the source array ({_sourceArray})");
             }
+
+            Assert.That(array.Length, Is.EqualTo(_mask.IncludedCount));
 
             var outputIndex = 0;
             for (var i = 0; i < sourceArray.Length; ++i)
