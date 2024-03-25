@@ -44,60 +44,27 @@ public class ArrayMaskApplier :
         }
     }
 
-    public void Visit(UInt8Array array)
-    {
-        VisitPrimitiveArray<byte, UInt8Array, UInt8Array.Builder>(array);
-    }
+    public void Visit(UInt8Array array) => VisitPrimitiveArray<byte, UInt8Array, UInt8Array.Builder>(array);
 
-    public void Visit(UInt16Array array)
-    {
-        VisitPrimitiveArray<ushort, UInt16Array, UInt16Array.Builder>(array);
-    }
+    public void Visit(UInt16Array array) => VisitPrimitiveArray<ushort, UInt16Array, UInt16Array.Builder>(array);
 
-    public void Visit(UInt32Array array)
-    {
-        VisitPrimitiveArray<uint, UInt32Array, UInt32Array.Builder>(array);
-    }
+    public void Visit(UInt32Array array) => VisitPrimitiveArray<uint, UInt32Array, UInt32Array.Builder>(array);
 
-    public void Visit(UInt64Array array)
-    {
-        VisitPrimitiveArray<ulong, UInt64Array, UInt64Array.Builder>(array);
-    }
+    public void Visit(UInt64Array array) => VisitPrimitiveArray<ulong, UInt64Array, UInt64Array.Builder>(array);
 
-    public void Visit(Int8Array array)
-    {
-        VisitPrimitiveArray<sbyte, Int8Array, Int8Array.Builder>(array);
-    }
+    public void Visit(Int8Array array) => VisitPrimitiveArray<sbyte, Int8Array, Int8Array.Builder>(array);
 
-    public void Visit(Int16Array array)
-    {
-        VisitPrimitiveArray<short, Int16Array, Int16Array.Builder>(array);
-    }
+    public void Visit(Int16Array array) => VisitPrimitiveArray<short, Int16Array, Int16Array.Builder>(array);
 
-    public void Visit(Int32Array array)
-    {
-        VisitPrimitiveArray<int, Int32Array, Int32Array.Builder>(array);
-    }
+    public void Visit(Int32Array array) => VisitPrimitiveArray<int, Int32Array, Int32Array.Builder>(array);
 
-    public void Visit(Int64Array array)
-    {
-        VisitPrimitiveArray<long, Int64Array, Int64Array.Builder>(array);
-    }
+    public void Visit(Int64Array array) => VisitPrimitiveArray<long, Int64Array, Int64Array.Builder>(array);
 
-    public void Visit(HalfFloatArray array)
-    {
-        VisitPrimitiveArray<Half, HalfFloatArray, HalfFloatArray.Builder>(array);
-    }
+    public void Visit(HalfFloatArray array) => VisitPrimitiveArray<Half, HalfFloatArray, HalfFloatArray.Builder>(array);
 
-    public void Visit(FloatArray array)
-    {
-        VisitPrimitiveArray<float, FloatArray, FloatArray.Builder>(array);
-    }
+    public void Visit(FloatArray array) => VisitPrimitiveArray<float, FloatArray, FloatArray.Builder>(array);
 
-    public void Visit(DoubleArray array)
-    {
-        VisitPrimitiveArray<double, DoubleArray, DoubleArray.Builder>(array);
-    }
+    public void Visit(DoubleArray array) => VisitPrimitiveArray<double, DoubleArray, DoubleArray.Builder>(array);
 
     public void Visit(IArrowArray array)
     {
