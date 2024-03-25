@@ -40,8 +40,10 @@ internal sealed class TypeComparer
                              && valueComparer.TypesMatch
                              && type.Ordered == expectedType.Ordered;
         }
-
-        TypesMatch = false;
+        else
+        {
+            TypesMatch = false;
+        }
     }
 
     public void Visit(FixedSizeBinaryType type)
@@ -62,8 +64,10 @@ internal sealed class TypeComparer
             type.ValueDataType.Accept(valueComparer);
             TypesMatch = valueComparer.TypesMatch;
         }
-
-        TypesMatch = false;
+        else
+        {
+            TypesMatch = false;
+        }
     }
 
     public void Visit(StructType type)
@@ -123,8 +127,10 @@ internal sealed class TypeComparer
             type.ValueDataType.Accept(valueComparer);
             TypesMatch = valueComparer.TypesMatch;
         }
-
-        TypesMatch = false;
+        else
+        {
+            TypesMatch = false;
+        }
     }
 
     public void Visit(ListViewType type)
@@ -135,8 +141,10 @@ internal sealed class TypeComparer
             type.ValueDataType.Accept(valueComparer);
             TypesMatch = valueComparer.TypesMatch;
         }
-
-        TypesMatch = false;
+        else
+        {
+            TypesMatch = false;
+        }
     }
 
     public void Visit(MapType type)
@@ -151,8 +159,10 @@ internal sealed class TypeComparer
                              && valueComparer.TypesMatch
                              && type.KeySorted == expectedType.KeySorted;
         }
-
-        TypesMatch = false;
+        else
+        {
+            TypesMatch = false;
+        }
     }
 
     public void Visit(IArrowType type)
