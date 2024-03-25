@@ -1,5 +1,7 @@
 using System;
 using Apache.Arrow;
+using Apache.Arrow.Arrays;
+using Apache.Arrow.Types;
 
 namespace ParquetSharp.Dataset.Filter;
 
@@ -19,6 +21,17 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<HalfFloatArray>
     , IArrowArrayVisitor<FloatArray>
     , IArrowArrayVisitor<DoubleArray>
+    , IArrowArrayVisitor<BooleanArray>
+    , IArrowArrayVisitor<Date32Array>
+    , IArrowArrayVisitor<Date64Array>
+    , IArrowArrayVisitor<Time32Array>
+    , IArrowArrayVisitor<Time64Array>
+    , IArrowArrayVisitor<TimestampArray>
+    , IArrowArrayVisitor<Decimal128Array>
+    , IArrowArrayVisitor<Decimal256Array>
+    , IArrowArrayVisitor<StringArray>
+    , IArrowArrayVisitor<BinaryArray>
+    , IArrowArrayVisitor<FixedSizeBinaryArray>
 {
     public ArrayMaskApplier(FilterMask mask)
     {
@@ -44,50 +57,152 @@ public class ArrayMaskApplier :
         }
     }
 
-    public void Visit(UInt8Array array) => VisitPrimitiveArray<byte, UInt8Array, UInt8Array.Builder>(array);
+    public void Visit(UInt8Array array) => VisitPrimitiveArray<byte, UInt8Array>(array, arrayData => new UInt8Array(arrayData));
 
-    public void Visit(UInt16Array array) => VisitPrimitiveArray<ushort, UInt16Array, UInt16Array.Builder>(array);
+    public void Visit(UInt16Array array) => VisitPrimitiveArray<ushort, UInt16Array>(array, arrayData => new UInt16Array(arrayData));
 
-    public void Visit(UInt32Array array) => VisitPrimitiveArray<uint, UInt32Array, UInt32Array.Builder>(array);
+    public void Visit(UInt32Array array) => VisitPrimitiveArray<uint, UInt32Array>(array, arrayData => new UInt32Array(arrayData));
 
-    public void Visit(UInt64Array array) => VisitPrimitiveArray<ulong, UInt64Array, UInt64Array.Builder>(array);
+    public void Visit(UInt64Array array) => VisitPrimitiveArray<ulong, UInt64Array>(array, arrayData => new UInt64Array(arrayData));
 
-    public void Visit(Int8Array array) => VisitPrimitiveArray<sbyte, Int8Array, Int8Array.Builder>(array);
+    public void Visit(Int8Array array) => VisitPrimitiveArray<sbyte, Int8Array>(array, arrayData => new Int8Array(arrayData));
 
-    public void Visit(Int16Array array) => VisitPrimitiveArray<short, Int16Array, Int16Array.Builder>(array);
+    public void Visit(Int16Array array) => VisitPrimitiveArray<short, Int16Array>(array, arrayData => new Int16Array(arrayData));
 
-    public void Visit(Int32Array array) => VisitPrimitiveArray<int, Int32Array, Int32Array.Builder>(array);
+    public void Visit(Int32Array array) => VisitPrimitiveArray<int, Int32Array>(array, arrayData => new Int32Array(arrayData));
 
-    public void Visit(Int64Array array) => VisitPrimitiveArray<long, Int64Array, Int64Array.Builder>(array);
+    public void Visit(Int64Array array) => VisitPrimitiveArray<long, Int64Array>(array, arrayData => new Int64Array(arrayData));
 
-    public void Visit(HalfFloatArray array) => VisitPrimitiveArray<Half, HalfFloatArray, HalfFloatArray.Builder>(array);
+    public void Visit(HalfFloatArray array) => VisitPrimitiveArray<Half, HalfFloatArray>(array, arrayData => new HalfFloatArray(arrayData));
 
-    public void Visit(FloatArray array) => VisitPrimitiveArray<float, FloatArray, FloatArray.Builder>(array);
+    public void Visit(FloatArray array) => VisitPrimitiveArray<float, FloatArray>(array, arrayData => new FloatArray(arrayData));
 
-    public void Visit(DoubleArray array) => VisitPrimitiveArray<double, DoubleArray, DoubleArray.Builder>(array);
+    public void Visit(DoubleArray array) => VisitPrimitiveArray<double, DoubleArray>(array, arrayData => new DoubleArray(arrayData));
 
-    public void Visit(IArrowArray array)
+    public void Visit(Date32Array array) => VisitPrimitiveArray<int, Date32Array>(array, arrayData => new Date32Array(arrayData));
+
+    public void Visit(Date64Array array) => VisitPrimitiveArray<long, Date64Array>(array, arrayData => new Date64Array(arrayData));
+
+    public void Visit(Time32Array array) => VisitPrimitiveArray<int, Time32Array>(array, arrayData => new Time32Array(arrayData));
+
+    public void Visit(Time64Array array) => VisitPrimitiveArray<long, Time64Array>(array, arrayData => new Time64Array(arrayData));
+
+    public void Visit(TimestampArray array) => VisitPrimitiveArray<long, TimestampArray>(array, arrayData => new TimestampArray(arrayData));
+
+    public void Visit(Decimal128Array array) => VisitFixedSizeBinaryArray<Decimal128Array>(array, arrayData => new Decimal128Array(arrayData));
+
+    public void Visit(Decimal256Array array) => VisitFixedSizeBinaryArray<Decimal256Array>(array, arrayData => new Decimal256Array(arrayData));
+
+    public void Visit(StringArray array) => VisitBinaryArray<StringArray>(array, arrayData => new StringArray(arrayData));
+
+    public void Visit(FixedSizeBinaryArray array) => VisitFixedSizeBinaryArray<FixedSizeBinaryArray>(array, arrayData => new FixedSizeBinaryArray(arrayData));
+
+    public void Visit(BinaryArray array) => VisitBinaryArray<BinaryArray>(array, arrayData => new BinaryArray(arrayData));
+
+    public void Visit(BooleanArray array)
     {
-        throw new NotImplementedException($"Filtering an array of type {array.Data.DataType} is not implemented");
-    }
-
-    private void VisitPrimitiveArray<T, TArray, TBuilder>(TArray array)
-        where T : struct
-        where TArray : PrimitiveArray<T>
-        where TBuilder : PrimitiveArrayBuilder<T, TArray, TBuilder>, new()
-    {
-        var builder = new TBuilder();
+        var builder = new BooleanArray.Builder();
         builder.Reserve(_includedCount);
 
         for (var i = 0; i < array.Length; ++i)
         {
             if (BitUtility.GetBit(_mask.Span, i))
             {
-                builder.Append(array.GetValue(i));
+                builder.NullableAppend(array.GetValue(i));
             }
         }
 
         _maskedArray = builder.Build();
+    }
+
+    public void Visit(IArrowArray array)
+    {
+        throw new NotImplementedException($"Filtering an array of type {array.Data.DataType} is not implemented");
+    }
+
+    private void VisitPrimitiveArray<T, TArray>(TArray array, Func<ArrayData, TArray> arrayConstructor)
+        where T : struct
+        where TArray : PrimitiveArray<T>
+    {
+        var valueBuffer = new ArrowBuffer.Builder<T>(_includedCount);
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+
+        var sourceValues = array.Values;
+
+        for (var i = 0; i < array.Length; ++i)
+        {
+            if (BitUtility.GetBit(_mask.Span, i))
+            {
+                valueBuffer.Append(sourceValues[i]);
+                validityBuffer.Append(array.IsValid(i));
+            }
+        }
+
+        var arrayData = new ArrayData(
+            array.Data.DataType, _includedCount, validityBuffer.UnsetBitCount, 0,
+            new[] { validityBuffer.Build(), valueBuffer.Build() });
+        _maskedArray = arrayConstructor(arrayData);
+    }
+
+    private void VisitFixedSizeBinaryArray<TArray>(TArray array, Func<ArrayData, TArray> arrayConstructor)
+        where TArray : FixedSizeBinaryArray
+    {
+        var size = ((FixedSizeBinaryType)array.Data.DataType).ByteWidth;
+        var valueBuffer = new ArrowBuffer.Builder<byte>(_includedCount * size);
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+
+        var sourceValues = array.ValueBuffer.Span;
+        var offset = array.Offset;
+
+        for (var i = 0; i < array.Length; ++i)
+        {
+            if (BitUtility.GetBit(_mask.Span, i))
+            {
+                valueBuffer.Append(sourceValues.Slice((offset + i) * size, size));
+                validityBuffer.Append(array.IsValid(i));
+            }
+        }
+
+        var arrayData = new ArrayData(
+            array.Data.DataType, _includedCount, validityBuffer.UnsetBitCount, 0,
+            new[] { validityBuffer.Build(), valueBuffer.Build() });
+        _maskedArray = arrayConstructor(arrayData);
+    }
+
+    private void VisitBinaryArray<TArray>(TArray array, Func<ArrayData, TArray> arrayConstructor)
+        where TArray : BinaryArray
+    {
+        var dataBuffer = new ArrowBuffer.Builder<byte>();
+        var valueOffsetsBuffer = new ArrowBuffer.Builder<int>(_includedCount);
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+
+        var sourceOffsets = array.ValueOffsets;
+        var sourceValues = array.Values;
+
+        var offset = 0;
+        valueOffsetsBuffer.Append(0);
+        for (var i = 0; i < array.Length; ++i)
+        {
+            if (BitUtility.GetBit(_mask.Span, i))
+            {
+                var isValid = array.IsValid(i);
+                if (isValid)
+                {
+                    var sourceOffset = sourceOffsets[i];
+                    var length = sourceOffsets[i + 1] - sourceOffset;
+                    dataBuffer.Append(sourceValues.Slice(sourceOffset, length));
+                    offset += length;
+                }
+
+                validityBuffer.Append(isValid);
+                valueOffsetsBuffer.Append(offset);
+            }
+        }
+
+        var arrayData = new ArrayData(
+            array.Data.DataType, _includedCount, validityBuffer.UnsetBitCount, 0,
+            new[] { validityBuffer.Build(), valueOffsetsBuffer.Build(), dataBuffer.Build() });
+        _maskedArray = arrayConstructor(arrayData);
     }
 
     private readonly ReadOnlyMemory<byte> _mask;
