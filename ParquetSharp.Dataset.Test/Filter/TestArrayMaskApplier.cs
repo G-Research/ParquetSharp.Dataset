@@ -167,6 +167,7 @@ public class TestArrayMaskApplier
                 (builder, _) => builder.AppendNull()),
             BuildDictionaryArray(numRows, random),
             BuildListArray(numRows, random),
+            BuildStructArray(numRows, random),
         };
     }
 
@@ -290,6 +291,29 @@ public class TestArrayMaskApplier
         return builder.Build();
     }
 
+    private static IArrowArray BuildStructArray(int numRows, Random random)
+    {
+        var dataType = new StructType(new Field[]
+        {
+            new Field("a", new Int32Type(), true),
+            new Field("b", new DoubleType(), true),
+        });
+        var arrayA =
+            BuildArray<int, Int32Array, Int32Array.Builder>(
+                new Int32Array.Builder(), numRows, random, rand => (int)rand.NextInt64(int.MinValue, 1L + int.MaxValue));
+        var arrayB = BuildArray<double, DoubleArray, DoubleArray.Builder>(
+            new DoubleArray.Builder(), numRows, random, rand => rand.NextDouble());
+        var nullBitmapBuilder = new ArrowBuffer.BitmapBuilder(numRows);
+        for (var i = 0; i < numRows; ++i)
+        {
+            nullBitmapBuilder.Append(random.NextDouble() < 0.05);
+        }
+
+        return new StructArray(
+            dataType, numRows, new[] { arrayA, arrayB }, nullBitmapBuilder.Build(),
+            nullCount: nullBitmapBuilder.UnsetBitCount, offset: 0);
+    }
+
     private sealed class MaskedArrayValidator : IArrowArrayVisitor
         , IArrowArrayVisitor<UInt8Array>
         , IArrowArrayVisitor<UInt16Array>
@@ -315,6 +339,7 @@ public class TestArrayMaskApplier
         , IArrowArrayVisitor<NullArray>
         , IArrowArrayVisitor<DictionaryArray>
         , IArrowArrayVisitor<ListArray>
+        , IArrowArrayVisitor<StructArray>
     {
         public MaskedArrayValidator(IArrowArray sourceArray, FilterMask? mask)
         {
@@ -414,6 +439,38 @@ public class TestArrayMaskApplier
             }
 
             Assert.That(outputIndex, Is.EqualTo(_expectedLength));
+        }
+
+        public void Visit(StructArray array)
+        {
+            if (_sourceArray is not StructArray sourceArray)
+            {
+                throw new Exception(
+                    $"Masked array ({array}) does not have the same type as the source array ({_sourceArray})");
+            }
+
+            if (array.Fields.Count != sourceArray.Fields.Count)
+            {
+                throw new Exception($"Struct array field count {array.Fields.Count} does not match expected count ({sourceArray.Fields.Count})");
+            }
+
+            Assert.That(array.Length, Is.EqualTo(_expectedLength));
+
+            var outputIndex = 0;
+            for (var i = 0; i < sourceArray.Length; ++i)
+            {
+                if (_mask == null || BitUtility.GetBit(_mask.Mask.Span, i))
+                {
+                    Assert.That(array.IsValid(outputIndex), Is.EqualTo(sourceArray.IsValid(i)));
+                    outputIndex++;
+                }
+            }
+
+            for (var fieldIdx = 0; fieldIdx < sourceArray.Fields.Count; ++fieldIdx)
+            {
+                var fieldValidator = new MaskedArrayValidator(sourceArray.Fields[fieldIdx], _mask);
+                array.Fields[fieldIdx].Accept(fieldValidator);
+            }
         }
 
         public void Visit(IArrowArray array)

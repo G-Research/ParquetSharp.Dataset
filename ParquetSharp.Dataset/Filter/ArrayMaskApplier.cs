@@ -35,6 +35,7 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<NullArray>
     , IArrowArrayVisitor<DictionaryArray>
     , IArrowArrayVisitor<ListArray>
+    , IArrowArrayVisitor<StructArray>
 {
     public ArrayMaskApplier(FilterMask mask)
     {
@@ -178,6 +179,31 @@ public class ArrayMaskApplier :
 
         _maskedArray = new ListArray(
             array.Data.DataType, _includedCount, valueOffsetsBuilder.Build(), valuesArray, validityBuffer.Build(),
+            nullCount: validityBuffer.UnsetBitCount, offset: 0);
+    }
+
+    public void Visit(StructArray array)
+    {
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+
+        for (var i = 0; i < array.Length; ++i)
+        {
+            if (BitUtility.GetBit(_mask.Span, i))
+            {
+                validityBuffer.Append(array.IsValid(i));
+            }
+        }
+
+        var fields = new IArrowArray[array.Fields.Count];
+        for (var fieldIdx = 0; fieldIdx < array.Fields.Count; ++fieldIdx)
+        {
+            var maskApplier = new ArrayMaskApplier(_mask, _includedCount);
+            array.Fields[fieldIdx].Accept(maskApplier);
+            fields[fieldIdx] = maskApplier.MaskedArray;
+        }
+
+        _maskedArray = new StructArray(
+            array.Data.DataType, _includedCount, fields, validityBuffer.Build(),
             nullCount: validityBuffer.UnsetBitCount, offset: 0);
     }
 
