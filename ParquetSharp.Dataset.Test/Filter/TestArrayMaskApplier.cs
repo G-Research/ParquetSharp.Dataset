@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Apache.Arrow;
 using Apache.Arrow.Types;
 using NUnit.Framework;
@@ -168,6 +170,7 @@ public class TestArrayMaskApplier
             BuildDictionaryArray(numRows, random),
             BuildListArray(numRows, random),
             BuildStructArray(numRows, random),
+            BuildMapArray(numRows, random),
         };
     }
 
@@ -312,6 +315,49 @@ public class TestArrayMaskApplier
         return new StructArray(
             dataType, numRows, new[] { arrayA, arrayB }, nullBitmapBuilder.Build(),
             nullCount: nullBitmapBuilder.UnsetBitCount, offset: 0);
+    }
+
+    private static IArrowArray BuildMapArray(int numRows, Random random)
+    {
+        var dataType = new MapType(new Int32Type(), new FloatType(), nullable: true, keySorted: false);
+        var builder = new MapArray.Builder(dataType);
+        var keyBuilder = (Int32Array.Builder)builder.KeyBuilder;
+        var valueBuilder = (FloatArray.Builder)builder.ValueBuilder;
+
+        for (var rowIdx = 0; rowIdx < numRows; ++rowIdx)
+        {
+            if (random.NextDouble() < 0.1)
+            {
+                builder.AppendNull();
+            }
+            else
+            {
+                builder.Append();
+                var mapLength = random.NextInt64(0, 10);
+                var keySet = new HashSet<int>();
+                for (var keyIdx = 0; keyIdx < mapLength; ++keyIdx)
+                {
+                    keySet.Add((int)random.NextInt64(0, 100));
+                }
+
+                var keys = keySet.ToArray();
+                mapLength = keys.Length;
+                for (var entryIdx = 0; entryIdx < mapLength; ++entryIdx)
+                {
+                    keyBuilder.Append(keys[entryIdx]);
+                    if (random.NextDouble() < 0.1)
+                    {
+                        valueBuilder.AppendNull();
+                    }
+                    else
+                    {
+                        valueBuilder.Append((float)random.NextDouble());
+                    }
+                }
+            }
+        }
+
+        return builder.Build();
     }
 
     private sealed class MaskedArrayValidator : IArrowArrayVisitor
@@ -468,8 +514,12 @@ public class TestArrayMaskApplier
 
             for (var fieldIdx = 0; fieldIdx < sourceArray.Fields.Count; ++fieldIdx)
             {
-                var fieldValidator = new MaskedArrayValidator(sourceArray.Fields[fieldIdx], _mask);
-                array.Fields[fieldIdx].Accept(fieldValidator);
+                // StructArray.Fields doesn't account for offset and length, so we need to slice here,
+                // see https://github.com/apache/arrow/issues/40790
+                var slicedSource = ArrowArrayFactory.Slice(sourceArray.Fields[fieldIdx], sourceArray.Offset, sourceArray.Length);
+                var slicedField = ArrowArrayFactory.Slice(array.Fields[fieldIdx], array.Offset, array.Length);
+                var fieldValidator = new MaskedArrayValidator(slicedSource, _mask);
+                slicedField.Accept(fieldValidator);
             }
         }
 
