@@ -6,8 +6,7 @@ using Apache.Arrow.Types;
 namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
-/// Applies a filter mask to an array and creates a new mask with
-/// only the filtered rows included.
+/// Applies a filter mask to an array and creates a new array with only the filtered rows included.
 /// </summary>
 public class ArrayMaskApplier :
     IArrowArrayVisitor<UInt8Array>
