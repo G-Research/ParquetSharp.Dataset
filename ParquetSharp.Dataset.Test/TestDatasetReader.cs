@@ -199,9 +199,16 @@ public class TestDatasetReader
         WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
         WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
 
+        // We need to define the schema, as the order in which files are visited for schema inference isn't deterministic.
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+
         var dataset = new DatasetReader(
             tmpDir.DirectoryPath,
-            new NoPartitioning());
+            new NoPartitioning(),
+            schema);
         using var reader = dataset.ToBatches();
         var exception = Assert.ThrowsAsync<Exception>(async () =>
         {
@@ -230,9 +237,15 @@ public class TestDatasetReader
         WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
         WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
 
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+
         var dataset = new DatasetReader(
             tmpDir.DirectoryPath,
-            new NoPartitioning());
+            new NoPartitioning(),
+            schema);
         using var reader = dataset.ToBatches();
         var exception = Assert.ThrowsAsync<Exception>(async () =>
         {
