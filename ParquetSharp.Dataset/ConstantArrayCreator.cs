@@ -66,25 +66,49 @@ internal sealed class ConstantArrayCreator
 
     public void Visit(StringArray array)
     {
-        var builder = new StringArray.Builder();
-        builder.Reserve(_arrayLength);
         var value = array.GetString(0);
         if (value == null)
         {
-            for (var i = 0; i < _arrayLength; ++i)
-            {
-                builder.AppendNull();
-            }
+            var valueOffsetsBuilder = new ArrowBuffer.Builder<int>(_arrayLength + 1);
+            valueOffsetsBuilder.Resize(_arrayLength + 1);
+            valueOffsetsBuilder.Span.Fill(0);
+            var valueOffsetsBuffer = valueOffsetsBuilder.Build();
+
+            var validityBuilder = new ArrowBuffer.BitmapBuilder(_arrayLength);
+            validityBuilder.AppendRange(false, _arrayLength);
+            var validityBuffer = validityBuilder.Build();
+
+            Array = new StringArray(
+                _arrayLength, valueOffsetsBuffer, ArrowBuffer.Empty, validityBuffer, nullCount: _arrayLength, offset: 0);
         }
         else
         {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            var size = bytes.Length;
+
+            var valueOffsetsBuilder = new ArrowBuffer.Builder<int>(_arrayLength + 1);
+            valueOffsetsBuilder.Resize(_arrayLength + 1);
+            var valueOffsetsSpan = valueOffsetsBuilder.Span;
+            for (var i = 0; i < _arrayLength + 1; ++i)
+            {
+                valueOffsetsSpan[i] = i * size;
+            }
+
+            var valueOffsetsBuffer = valueOffsetsBuilder.Build();
+
+            var dataBuilder = new ArrowBuffer.Builder<byte>(_arrayLength * size);
+            dataBuilder.Resize(_arrayLength * size);
+            var dataSpan = dataBuilder.Span;
             for (var i = 0; i < _arrayLength; ++i)
             {
-                builder.Append(value);
+                bytes.CopyTo(dataSpan.Slice(i * size));
             }
-        }
 
-        Array = builder.Build();
+            var dataBuffer = dataBuilder.Build();
+
+            Array = new StringArray(
+                _arrayLength, valueOffsetsBuffer, dataBuffer, ArrowBuffer.Empty, nullCount: 0, offset: 0);
+        }
     }
 
     public void Visit(IArrowArray array)
