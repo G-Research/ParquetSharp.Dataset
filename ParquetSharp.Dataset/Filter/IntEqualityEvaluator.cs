@@ -27,9 +27,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < 0 || _expectedValue > byte.MaxValue)
             {
-                BitUtility.SetBit(mask, i, _expectedValue > 0 && inputArray.GetValue(i) == _expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (byte)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }
@@ -38,9 +46,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < 0 || _expectedValue > ushort.MaxValue)
             {
-                BitUtility.SetBit(mask, i, _expectedValue > 0 && inputArray.GetValue(i) == _expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (ushort)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }
@@ -49,9 +65,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < 0 || _expectedValue > uint.MaxValue)
             {
-                BitUtility.SetBit(mask, i, _expectedValue > 0 && inputArray.GetValue(i) == (ulong)_expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (uint)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }
@@ -60,9 +84,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < 0)
             {
-                BitUtility.SetBit(mask, i, _expectedValue > 0 && inputArray.GetValue(i) == (ulong)_expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (ulong)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }
@@ -71,9 +103,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < sbyte.MinValue || _expectedValue > sbyte.MaxValue)
             {
-                BitUtility.SetBit(mask, i, inputArray.GetValue(i) == _expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (sbyte)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }
@@ -82,9 +122,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < short.MinValue || _expectedValue > short.MaxValue)
             {
-                BitUtility.SetBit(mask, i, inputArray.GetValue(i) == _expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (short)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }
@@ -93,9 +141,17 @@ internal sealed class IntEqualityEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            if (_expectedValue < int.MinValue || _expectedValue > int.MaxValue)
             {
-                BitUtility.SetBit(mask, i, inputArray.GetValue(i) == _expectedValue);
+                mask.AsSpan().Fill(0);
+            }
+            else
+            {
+                var expectedValue = (int)_expectedValue;
+                for (var i = 0; i < inputArray.Length; ++i)
+                {
+                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
+                }
             }
         });
     }

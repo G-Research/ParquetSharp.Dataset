@@ -11,8 +11,8 @@ public class TestIntFilter
     {
         var filter = Col.Named("x").IsEqualTo(2);
 
+        var zeroFilter = Col.Named("x").IsEqualTo(0);
         var negativeValueFilter = Col.Named("x").IsEqualTo(-2);
-
         var maxInt64Filter = Col.Named("x").IsEqualTo(long.MaxValue);
 
         foreach (var (value, expected) in new (long?, bool)[]
@@ -23,6 +23,16 @@ public class TestIntFilter
                  })
         {
             TestIntColumnFilterWithAllTypes(filter, value, expected);
+        }
+
+        foreach (var (value, expected) in new (long?, bool)[]
+                 {
+                     (2, false),
+                     (0, true),
+                     (null, false),
+                 })
+        {
+            TestIntColumnFilterWithAllTypes(zeroFilter, value, expected);
         }
 
         TestIntColumnFilterWithAllTypes(negativeValueFilter, 2, false);
