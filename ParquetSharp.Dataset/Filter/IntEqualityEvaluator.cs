@@ -33,11 +33,7 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (byte)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (byte)_expectedValue);
             }
         });
     }
@@ -52,11 +48,7 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (ushort)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (ushort)_expectedValue);
             }
         });
     }
@@ -71,11 +63,7 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (uint)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (uint)_expectedValue);
             }
         });
     }
@@ -90,11 +78,7 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (ulong)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (ulong)_expectedValue);
             }
         });
     }
@@ -109,11 +93,7 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (sbyte)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (sbyte)_expectedValue);
             }
         });
     }
@@ -128,11 +108,7 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (short)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (short)_expectedValue);
             }
         });
     }
@@ -147,24 +123,35 @@ internal sealed class IntEqualityEvaluator :
             }
             else
             {
-                var expectedValue = (int)_expectedValue;
-                for (var i = 0; i < inputArray.Length; ++i)
-                {
-                    BitUtility.SetBit(mask, i, inputArray.GetValue(i) == expectedValue);
-                }
+                ComputeMask(mask, inputArray, (int)_expectedValue);
             }
         });
     }
 
     public void Visit(Int64Array array)
     {
-        BuildMask(array, (mask, inputArray) =>
+        BuildMask(array, (mask, inputArray) => { ComputeMask(mask, inputArray, _expectedValue); });
+    }
+
+    private static void ComputeMask<T, TArray>(byte[] mask, TArray array, T expectedValue)
+        where T : struct, IEquatable<T>
+        where TArray : PrimitiveArray<T>
+    {
+        if (array.NullCount == 0)
         {
-            for (var i = 0; i < inputArray.Length; ++i)
+            var values = array.Values;
+            for (var i = 0; i < array.Length; ++i)
             {
-                BitUtility.SetBit(mask, i, inputArray.GetValue(i) == _expectedValue);
+                BitUtility.SetBit(mask, i, values[i].Equals(expectedValue));
             }
-        });
+        }
+        else
+        {
+            for (var i = 0; i < array.Length; ++i)
+            {
+                BitUtility.SetBit(mask, i, array.GetValue(i).Equals(expectedValue));
+            }
+        }
     }
 
     public override void Visit(IArrowArray array)
