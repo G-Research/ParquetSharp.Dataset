@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>10.0</LangVersion>
-    <AssemblyName>ParquetSharp.Dataset</AssemblyName>
-    <RootNamespace>ParquetSharp.Dataset</RootNamespace>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>0.1.0-beta1</Version>
