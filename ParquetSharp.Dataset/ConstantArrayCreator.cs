@@ -26,42 +26,42 @@ internal sealed class ConstantArrayCreator
 
     public void Visit(UInt8Array array)
     {
-        VisitPrimitiveArray<byte, UInt8Array, UInt8Array.Builder>(array);
+        Array = new UInt8Array(VisitPrimitiveArray<byte, UInt8Array>(array));
     }
 
     public void Visit(UInt16Array array)
     {
-        VisitPrimitiveArray<ushort, UInt16Array, UInt16Array.Builder>(array);
+        Array = new UInt16Array(VisitPrimitiveArray<ushort, UInt16Array>(array));
     }
 
     public void Visit(UInt32Array array)
     {
-        VisitPrimitiveArray<uint, UInt32Array, UInt32Array.Builder>(array);
+        Array = new UInt32Array(VisitPrimitiveArray<uint, UInt32Array>(array));
     }
 
     public void Visit(UInt64Array array)
     {
-        VisitPrimitiveArray<ulong, UInt64Array, UInt64Array.Builder>(array);
+        Array = new UInt64Array(VisitPrimitiveArray<ulong, UInt64Array>(array));
     }
 
     public void Visit(Int8Array array)
     {
-        VisitPrimitiveArray<sbyte, Int8Array, Int8Array.Builder>(array);
+        Array = new Int8Array(VisitPrimitiveArray<sbyte, Int8Array>(array));
     }
 
     public void Visit(Int16Array array)
     {
-        VisitPrimitiveArray<short, Int16Array, Int16Array.Builder>(array);
+        Array = new Int16Array(VisitPrimitiveArray<short, Int16Array>(array));
     }
 
     public void Visit(Int32Array array)
     {
-        VisitPrimitiveArray<int, Int32Array, Int32Array.Builder>(array);
+        Array = new Int32Array(VisitPrimitiveArray<int, Int32Array>(array));
     }
 
     public void Visit(Int64Array array)
     {
-        VisitPrimitiveArray<long, Int64Array, Int64Array.Builder>(array);
+        Array = new Int64Array(VisitPrimitiveArray<long, Int64Array>(array));
     }
 
     public void Visit(StringArray array)
@@ -93,30 +93,33 @@ internal sealed class ConstantArrayCreator
             $"Cannot create a constant array with type {array.Data.DataType.Name}");
     }
 
-    private void VisitPrimitiveArray<T, TArray, TBuilder>(TArray array)
+    private ArrayData VisitPrimitiveArray<T, TArray>(TArray array)
         where T : struct
         where TArray : PrimitiveArray<T>
-        where TBuilder : PrimitiveArrayBuilder<T, TArray, TBuilder>, new()
     {
-        var builder = new TBuilder();
-        builder.Reserve(_arrayLength);
         var value = array.GetValue(0);
         if (value.HasValue)
         {
-            for (var i = 0; i < _arrayLength; ++i)
-            {
-                builder.Append(value.Value);
-            }
+            var valueBuilder = new ArrowBuffer.Builder<T>(_arrayLength);
+            valueBuilder.Resize(_arrayLength);
+            valueBuilder.Span.Fill(value.Value);
+            var valueBuffer = valueBuilder.Build();
+
+            return new ArrayData(array.Data.DataType, _arrayLength, 0, 0, new[] { ArrowBuffer.Empty, valueBuffer });
         }
         else
         {
-            for (var i = 0; i < _arrayLength; ++i)
-            {
-                builder.AppendNull();
-            }
-        }
+            var valueBuilder = new ArrowBuffer.Builder<T>(_arrayLength);
+            valueBuilder.Resize(_arrayLength);
+            valueBuilder.Span.Fill(default);
+            var valueBuffer = valueBuilder.Build();
 
-        Array = builder.Build();
+            var validityBuilder = new ArrowBuffer.BitmapBuilder(_arrayLength);
+            validityBuilder.AppendRange(false, _arrayLength);
+            var validityBuffer = validityBuilder.Build();
+
+            return new ArrayData(array.Data.DataType, _arrayLength, _arrayLength, 0, new[] { validityBuffer, valueBuffer });
+        }
     }
 
 
