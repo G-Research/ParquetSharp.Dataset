@@ -233,22 +233,46 @@ public class ArrayMaskApplier :
         where TArray : PrimitiveArray<T>
     {
         var valueBuffer = new ArrowBuffer.Builder<T>(_includedCount);
-        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+        valueBuffer.Resize(_includedCount);
 
         var sourceValues = array.Values;
+        var outputValues = valueBuffer.Span;
 
+        var outputIndex = 0;
         for (var i = 0; i < array.Length; ++i)
         {
             if (BitUtility.GetBit(_mask.Span, i))
             {
-                valueBuffer.Append(sourceValues[i]);
-                validityBuffer.Append(array.IsValid(i));
+                outputValues[outputIndex++] = sourceValues[i];
             }
         }
 
+        int nullCount;
+        ArrowBuffer validityBuffer;
+
+        if (array.NullCount == 0)
+        {
+            nullCount = 0;
+            validityBuffer = ArrowBuffer.Empty;
+        }
+        else
+        {
+            var validityBuilder = new ArrowBuffer.BitmapBuilder(_includedCount);
+            for (var i = 0; i < array.Length; ++i)
+            {
+                if (BitUtility.GetBit(_mask.Span, i))
+                {
+                    validityBuilder.Append(array.IsValid(i));
+                }
+            }
+
+            nullCount = validityBuilder.UnsetBitCount;
+            validityBuffer = validityBuilder.Build();
+        }
+
         var arrayData = new ArrayData(
-            array.Data.DataType, _includedCount, validityBuffer.UnsetBitCount, 0,
-            new[] { validityBuffer.Build(), valueBuffer.Build() });
+            array.Data.DataType, _includedCount, nullCount, 0,
+            new[] { validityBuffer, valueBuffer.Build() });
         _maskedArray = arrayConstructor(arrayData);
     }
 
