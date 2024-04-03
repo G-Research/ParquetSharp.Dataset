@@ -4,8 +4,13 @@ namespace ParquetSharp.Dataset.Filter;
 
 public abstract class LogicalStatistics
 {
-    public static LogicalStatistics? FromStatistics(Statistics statistics, ColumnDescriptor descriptor)
+    public static LogicalStatistics? FromStatistics(Statistics? statistics, ColumnDescriptor descriptor)
     {
+        if (!(statistics?.HasMinMax ?? false))
+        {
+            return null;
+        }
+
         using var logicalType = descriptor.LogicalType;
         checked
         {

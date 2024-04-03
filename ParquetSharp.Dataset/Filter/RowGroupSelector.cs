@@ -42,14 +42,11 @@ internal sealed class RowGroupSelector
             {
                 var metadata = rowGroup.MetaData.GetColumnChunkMetaData(columnIndex);
                 using var statistics = metadata.Statistics;
-                if (statistics?.HasMinMax ?? false)
+                var logicalStatistics = LogicalStatistics.FromStatistics(
+                    statistics, schemaDescriptor.Column(columnIndex));
+                if (logicalStatistics != null)
                 {
-                    var logicalStatistics = LogicalStatistics.FromStatistics(
-                        statistics, schemaDescriptor.Column(columnIndex));
-                    if (logicalStatistics != null)
-                    {
-                        columnStatistics[columnName] = logicalStatistics;
-                    }
+                    columnStatistics[columnName] = logicalStatistics;
                 }
                 // Else if statistics are not available, we may still be able to exclude this
                 // row group based on another column if an "and" condition is used.
