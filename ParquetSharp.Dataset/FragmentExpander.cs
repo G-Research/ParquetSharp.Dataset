@@ -19,7 +19,7 @@ internal sealed class FragmentExpander
     public RecordBatch ExpandBatch(RecordBatch fragmentBatch, PartitionInformation partitionInfo)
     {
         var fieldCount = _resultSchema.FieldsList.Count;
-        var arrays = new List<IArrowArray>();
+        var arrays = new List<IArrowArray>(fieldCount);
         var fragmentFields = new HashSet<string>(fragmentBatch.Schema.FieldsList.Select(f => f.Name));
         var partitionFields = new HashSet<string>(partitionInfo.Batch.Schema.FieldsList.Select(f => f.Name));
         for (var i = 0; i < fieldCount; ++i)

@@ -85,7 +85,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
             return null;
         }
 
-        var arrays = new List<IArrowArray>();
+        var arrays = new List<IArrowArray>(recordBatch.ColumnCount);
         for (var colIdx = 0; colIdx < recordBatch.ColumnCount; ++colIdx)
         {
             var filterApplier = new ArrayMaskApplier(filterMask);
@@ -128,7 +128,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
     private int[] GetFileColumnIndices(FileReader fileReader)
     {
         var fileFields = fileReader.Schema.FieldsList;
-        var columnIndices = new List<int>();
+        var columnIndices = new List<int>(_requiredFields.Count);
         for (var fieldIdx = 0; fieldIdx < fileFields.Count; ++fieldIdx)
         {
             if (_requiredFields.Contains(fileFields[fieldIdx].Name))

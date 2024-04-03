@@ -68,8 +68,8 @@ public sealed class HivePartitioning : IPartitioning
 
     public PartitionInformation Parse(string[] pathComponents)
     {
-        var arrays = new List<IArrowArray>();
-        var fields = new List<Field>();
+        var arrays = new List<IArrowArray>(pathComponents.Length);
+        var fields = new List<Field>(pathComponents.Length);
 
         foreach (var dirName in pathComponents)
         {

@@ -33,7 +33,7 @@ internal sealed class RowGroupSelector
         using var fileMetadata = parquetReader.FileMetaData;
         var schemaDescriptor = fileMetadata.Schema;
 
-        var rowGroups = new List<int>();
+        var rowGroups = new List<int>(numRowGroups);
         var columnStatistics = new Dictionary<string, LogicalStatistics>(columnIndices.Count);
         for (var rowGroupIdx = 0; rowGroupIdx < numRowGroups; ++rowGroupIdx)
         {
