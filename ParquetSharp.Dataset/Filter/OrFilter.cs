@@ -25,8 +25,13 @@ internal sealed class OrFilter : IFilter
     public FilterMask? ComputeMask(RecordBatch dataBatch)
     {
         var firstMask = _first.ComputeMask(dataBatch);
+        if (firstMask == null)
+        {
+            return null;
+        }
+
         var secondMask = _second.ComputeMask(dataBatch);
-        if (firstMask == null || secondMask == null)
+        if (secondMask == null)
         {
             return null;
         }
