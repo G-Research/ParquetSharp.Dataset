@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Apache.Arrow;
 
 namespace ParquetSharp.Dataset.Filter;
@@ -10,7 +8,7 @@ internal sealed class ColumnValueFilter : IFilter
     internal ColumnValueFilter(
         string columnName,
         BaseFilterEvaluator evaluator,
-        BaseStatisticsEvaluator? statsEvaluator = null)
+        ILogicalStatisticsVisitor<bool>? statsEvaluator = null)
     {
         _columnName = columnName;
         _evaluator = evaluator;
@@ -34,9 +32,9 @@ internal sealed class ColumnValueFilter : IFilter
 
     public bool IncludeRowGroup(IReadOnlyDictionary<string, LogicalStatistics> columnStatistics)
     {
-        if (columnStatistics.TryGetValue(_columnName, out var statistics))
+        if (_statsEvaluator != null && columnStatistics.TryGetValue(_columnName, out var statistics))
         {
-            return _statsEvaluator?.IncludeRowGroup(statistics) ?? true;
+            return statistics.Accept(_statsEvaluator);
         }
 
         // Filter column is not a Parquet column or does not have statistics
@@ -62,5 +60,5 @@ internal sealed class ColumnValueFilter : IFilter
 
     private readonly string _columnName;
     private readonly BaseFilterEvaluator _evaluator;
-    private readonly BaseStatisticsEvaluator? _statsEvaluator;
+    private readonly ILogicalStatisticsVisitor<bool>? _statsEvaluator;
 }

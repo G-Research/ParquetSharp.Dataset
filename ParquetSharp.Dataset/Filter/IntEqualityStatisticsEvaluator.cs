@@ -1,48 +1,61 @@
 namespace ParquetSharp.Dataset.Filter;
 
-internal sealed class IntEqualityStatisticsEvaluator : BaseStatisticsEvaluator
+internal sealed class IntEqualityStatisticsEvaluator
+    : ILogicalStatisticsVisitor<byte, bool>,
+        ILogicalStatisticsVisitor<ushort, bool>,
+        ILogicalStatisticsVisitor<uint, bool>,
+        ILogicalStatisticsVisitor<ulong, bool>,
+        ILogicalStatisticsVisitor<sbyte, bool>,
+        ILogicalStatisticsVisitor<short, bool>,
+        ILogicalStatisticsVisitor<int, bool>,
+        ILogicalStatisticsVisitor<long, bool>
 {
     public IntEqualityStatisticsEvaluator(long value)
     {
         _value = value;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<byte> stats)
+    public bool Visit(LogicalStatistics stats)
+    {
+        return true;
+    }
+
+    public bool Visit(LogicalStatistics<byte> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<ushort> stats)
+    public bool Visit(LogicalStatistics<ushort> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<uint> stats)
+    public bool Visit(LogicalStatistics<uint> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<ulong> stats)
+    public bool Visit(LogicalStatistics<ulong> stats)
     {
         return _value >= 0 && (ulong)_value >= stats.Min && (ulong)_value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<sbyte> stats)
+    public bool Visit(LogicalStatistics<sbyte> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<short> stats)
+    public bool Visit(LogicalStatistics<short> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<int> stats)
+    public bool Visit(LogicalStatistics<int> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }
 
-    protected override bool IncludeRowGroup(LogicalStatistics<long> stats)
+    public bool Visit(LogicalStatistics<long> stats)
     {
         return _value >= stats.Min && _value <= stats.Max;
     }

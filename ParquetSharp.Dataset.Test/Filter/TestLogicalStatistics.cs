@@ -189,7 +189,9 @@ public class TestLogicalStatistics
         WriteParquet(filePath, rowGroupValues);
         var statistics = GetStatistics(filePath);
 
-        // HasMinMax should be false, so statistics will be null
+        // HasMinMax should be false, so statistics will be null.
+        // In future we might want to allow statistics without Min/Max values though,
+        // if we want to expose other stats like the null count.
         Assert.That(statistics.Length, Is.EqualTo(1));
         Assert.That(statistics[0], Is.Null);
     }

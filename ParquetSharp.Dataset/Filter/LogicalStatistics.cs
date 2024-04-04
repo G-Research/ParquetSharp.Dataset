@@ -43,6 +43,8 @@ public abstract class LogicalStatistics
             };
         }
     }
+
+    public abstract TOut Accept<TOut>(ILogicalStatisticsVisitor<TOut> visitor);
 }
 
 /// <summary>
@@ -59,4 +61,16 @@ public sealed class LogicalStatistics<T> : LogicalStatistics
     public T Min { get; }
 
     public T Max { get; }
+
+    public override TOut Accept<TOut>(ILogicalStatisticsVisitor<TOut> visitor)
+    {
+        if (visitor is ILogicalStatisticsVisitor<T, TOut> typedVisitor)
+        {
+            return typedVisitor.Visit(this);
+        }
+        else
+        {
+            return visitor.Visit(this);
+        }
+    }
 }
