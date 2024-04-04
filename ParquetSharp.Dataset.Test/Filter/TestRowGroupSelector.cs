@@ -27,6 +27,7 @@ public class TestRowGroupSelector
 
         using var reader = new FileReader(filePath);
         var rowGroups = rowGroupSelector.GetRequiredRowGroups(reader);
+        // Null row groups indicate that all row groups should be read
         Assert.That(rowGroups, Is.Null);
     }
 
