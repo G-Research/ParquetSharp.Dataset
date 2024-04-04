@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace ParquetSharp.Dataset;
@@ -51,5 +52,18 @@ public static class ColExtensions
     public static IFilter IsIn(this Col column, IReadOnlyList<string?> values)
     {
         return new ColumnValueFilter(column.Name, new StringInSetEvaluator(values, column.Name));
+    }
+
+    /// <summary>
+    /// Filter based on a date typed column being within a specified date range
+    /// </summary>
+    /// <param name="column">The date column to add the condition on</param>
+    /// <param name="start">The first date of the range (inclusive)</param>
+    /// <param name="end">The last date of the range (inclusive)</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsInRange(this Col column, DateOnly start, DateOnly end)
+    {
+        return new ColumnValueFilter(
+            column.Name, new DateRangeEvaluator(start, end, column.Name));
     }
 }
