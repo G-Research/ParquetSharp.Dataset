@@ -30,6 +30,7 @@ public abstract class LogicalStatistics
                 (Statistics<FixedLenByteArray> stats, Float16LogicalType) => CreateStatistics<FixedLenByteArray, Half>(stats, LogicalRead.ToHalf),
                 (Statistics<float> stats, NoneLogicalType) => CreateStatistics<float, float>(stats, val => val),
                 (Statistics<double> stats, NoneLogicalType) => CreateStatistics<double, double>(stats, val => val),
+                (Statistics<int> stats, DateLogicalType) => CreateStatistics<int, DateOnly>(stats, LogicalRead.ToDateOnly),
                 _ => null,
             };
         }

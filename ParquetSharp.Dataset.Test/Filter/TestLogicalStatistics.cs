@@ -218,18 +218,32 @@ public class TestLogicalStatistics
     [Test]
     public void TestCreateDateStatistics()
     {
+        var rowGroupValues = new[]
+        {
+            new DateOnly?[] { new(2024, 4, 1), new(2024, 4, 2), new(2024, 4, 3) },
+            new DateOnly?[] { DateOnly.MinValue, DateOnly.MaxValue },
+        };
+        var expectedMin = new DateOnly[] { new(2024, 4, 1), DateOnly.MinValue };
+        var expectedMax = new DateOnly[] { new(2024, 4, 3), DateOnly.MaxValue };
+
+        TestCreateLogicalStatistics(rowGroupValues, expectedMin, expectedMax);
+    }
+
+    [Test]
+    public void TestCreateTimespanStatistics()
+    {
         using var tmpDir = new DisposableDirectory();
         var filePath = tmpDir.AbsPath("test.parquet");
 
         var rowGroupValues = new[]
         {
-            new Date[] { new(2024, 4, 1), new(2024, 4, 2) }
+            new TimeSpan[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2) }
         };
 
         WriteParquet(filePath, rowGroupValues);
         var statistics = GetStatistics(filePath);
 
-        // Stats should be null, as although the physical type is int32,
+        // Stats should be null, as although the physical type is int64,
         // we don't currently support creation of logical statistics for this type.
         Assert.That(statistics.Length, Is.EqualTo(1));
         Assert.That(statistics[0], Is.Null);
