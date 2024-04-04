@@ -48,7 +48,7 @@ containing a field name and value:
 /my-dataset/part=b/data1.parquet
 ```
 
-To read Hive partitioned data, you can provide a `HivePartitioning.Builder` instance
+To read Hive partitioned data, you can provide a `HivePartitioning.Factory` instance
 to the `DatasetReader` constructor, and the partitioning schema will be inferred
 by looking at the dataset directory structure:
 
