@@ -11,15 +11,17 @@ namespace ParquetSharp.Dataset.Test.Filter;
 public class TestRowGroupSelector
 {
     [Test]
-    public void TestFilterPartitionColumn()
+    public void TestFilterPartitionColumn([Values] bool enableStatistics)
     {
         using var tmpDir = new DisposableDirectory();
         var filePath = tmpDir.AbsPath("test.parquet");
 
         var batch0 = GenerateBatch(0, 10);
         var batch1 = GenerateBatch(10, 20);
-        WriteParquetFile(filePath, new[] { batch0, batch1 }, includeStats: true);
+        WriteParquetFile(filePath, new[] { batch0, batch1 }, includeStats: enableStatistics);
 
+        // Filter on an arbitrary field name that isn't found in the data file.
+        // This will happen when filtering on a field from the partitioning schema.
         var filter = Col.Named("part").IsEqualTo(5);
         var rowGroupSelector = new RowGroupSelector(filter);
 
@@ -29,25 +31,7 @@ public class TestRowGroupSelector
     }
 
     [Test]
-    public void TestNoStatistics()
-    {
-        using var tmpDir = new DisposableDirectory();
-        var filePath = tmpDir.AbsPath("test.parquet");
-
-        var batch0 = GenerateBatch(0, 10);
-        var batch1 = GenerateBatch(10, 20);
-        WriteParquetFile(filePath, new[] { batch0, batch1 }, includeStats: false);
-
-        var filter = Col.Named("id").IsEqualTo(5);
-        var rowGroupSelector = new RowGroupSelector(filter);
-
-        using var reader = new FileReader(filePath);
-        var rowGroups = rowGroupSelector.GetRequiredRowGroups(reader);
-        Assert.That(rowGroups, Is.EqualTo(new[] { 0, 1 }));
-    }
-
-    [Test]
-    public void TestFilterIntColumnValue()
+    public void TestFilterIntColumnValue([Values] bool enableStatistics)
     {
         using var tmpDir = new DisposableDirectory();
         var filePath = tmpDir.AbsPath("test.parquet");
@@ -55,18 +39,19 @@ public class TestRowGroupSelector
         var batch0 = GenerateBatch(0, 10);
         var batch1 = GenerateBatch(10, 20);
         var batch2 = GenerateBatch(20, 30);
-        WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: true);
+        WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: enableStatistics);
 
         var filter = Col.Named("id").IsEqualTo(15);
         var rowGroupSelector = new RowGroupSelector(filter);
 
         using var reader = new FileReader(filePath);
         var rowGroups = rowGroupSelector.GetRequiredRowGroups(reader);
-        Assert.That(rowGroups, Is.EqualTo(new[] { 1 }));
+        var expectedRowGroups = enableStatistics ? new[] { 1 } : new[] { 0, 1, 2 };
+        Assert.That(rowGroups, Is.EqualTo(expectedRowGroups));
     }
 
     [Test]
-    public void TestFilterIntColumnRange()
+    public void TestFilterIntColumnRange([Values] bool enableStatistics)
     {
         using var tmpDir = new DisposableDirectory();
         var filePath = tmpDir.AbsPath("test.parquet");
@@ -74,14 +59,15 @@ public class TestRowGroupSelector
         var batch0 = GenerateBatch(0, 10);
         var batch1 = GenerateBatch(10, 20);
         var batch2 = GenerateBatch(20, 30);
-        WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: true);
+        WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: enableStatistics);
 
         var filter = Col.Named("id").IsInRange(15, 25);
         var rowGroupSelector = new RowGroupSelector(filter);
 
         using var reader = new FileReader(filePath);
         var rowGroups = rowGroupSelector.GetRequiredRowGroups(reader);
-        Assert.That(rowGroups, Is.EqualTo(new[] { 1, 2 }));
+        var expectedRowGroups = enableStatistics ? new[] { 1, 2 } : new[] { 0, 1, 2 };
+        Assert.That(rowGroups, Is.EqualTo(expectedRowGroups));
     }
 
     private static RecordBatch GenerateBatch(int idStart, int idEnd)
