@@ -64,6 +64,6 @@ public static class ColExtensions
     public static IFilter IsInRange(this Col column, DateOnly start, DateOnly end)
     {
         return new ColumnValueFilter(
-            column.Name, new DateRangeEvaluator(start, end, column.Name));
+            column.Name, new DateRangeEvaluator(start, end, column.Name), new DateRangeStatisticsEvaluator(start, end));
     }
 }

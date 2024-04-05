@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Apache.Arrow;
 using NUnit.Framework;
+using ParquetSharp.Dataset.Filter;
 
 namespace ParquetSharp.Dataset.Test.Filter;
 
@@ -60,5 +62,31 @@ public class TestDateFilter
         var exception = Assert.Throws<NotSupportedException>(() => filter.ComputeMask(recordBatch));
         Assert.That(exception!.Message, Is.EqualTo(
             "Date range filter for column 'date' does not support arrays with type int32"));
+    }
+
+    [Test]
+    public void TestIncludeRowGroup()
+    {
+        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 1), new DateOnly(2024, 2, 10));
+
+        foreach (var (min, max, expectInclude) in new[]
+                 {
+                     (new DateOnly(2024, 1, 1), new DateOnly(2024, 1, 31), false),
+                     (new DateOnly(2024, 1, 1), new DateOnly(2024, 2, 1), true),
+                     (new DateOnly(2024, 2, 10), new DateOnly(2024, 2, 11), true),
+                     (new DateOnly(2024, 2, 11), new DateOnly(2024, 2, 12), false),
+                     (new DateOnly(2024, 1, 1), new DateOnly(2024, 2, 29), true),
+                     (new DateOnly(2024, 2, 4), new DateOnly(2024, 2, 4), true),
+                 })
+        {
+            var statistics = new Dictionary<string, LogicalStatistics>
+            {
+                { "date", new LogicalStatistics<DateOnly>(min, max) }
+            };
+
+            var includeRowGroup = filter.IncludeRowGroup(statistics);
+
+            Assert.That(includeRowGroup, Is.EqualTo(expectInclude));
+        }
     }
 }

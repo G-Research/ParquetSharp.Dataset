@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apache.Arrow;
@@ -71,6 +72,26 @@ public class TestRowGroupSelector
         Assert.That(rowGroups, Is.EqualTo(expectedRowGroups));
     }
 
+    [Test]
+    public void TestFilterDateColumnRange([Values] bool enableStatistics)
+    {
+        using var tmpDir = new DisposableDirectory();
+        var filePath = tmpDir.AbsPath("test.parquet");
+
+        var batch0 = GenerateBatchWithDateColumn(new DateOnly(2024, 1, 1), new DateOnly(2024, 1, 31));
+        var batch1 = GenerateBatchWithDateColumn(new DateOnly(2024, 2, 1), new DateOnly(2024, 2, 29));
+        var batch2 = GenerateBatchWithDateColumn(new DateOnly(2024, 3, 1), new DateOnly(2024, 3, 31));
+        WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: enableStatistics);
+
+        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 5), new DateOnly(2024, 3, 5));
+        var rowGroupSelector = new RowGroupSelector(filter);
+
+        using var reader = new FileReader(filePath);
+        var rowGroups = rowGroupSelector.GetRequiredRowGroups(reader);
+        var expectedRowGroups = enableStatistics ? new[] { 1, 2 } : new[] { 0, 1, 2 };
+        Assert.That(rowGroups, Is.EqualTo(expectedRowGroups));
+    }
+
     private static RecordBatch GenerateBatch(int idStart, int idEnd)
     {
         const int rowsPerId = 10;
@@ -80,6 +101,19 @@ public class TestRowGroupSelector
             .ToArray();
         var xValues = Enumerable.Range(0, idValues.Length).Select(i => i * 0.1f).ToArray();
         builder.Append("id", false, new Int32Array.Builder().Append(idValues));
+        builder.Append("x", false, new FloatArray.Builder().Append(xValues));
+        return builder.Build();
+    }
+
+    private static RecordBatch GenerateBatchWithDateColumn(DateOnly dateStart, DateOnly dateEnd)
+    {
+        const int rowsPerDate = 10;
+        var builder = new RecordBatch.Builder();
+        var dateValues = Enumerable.Range(0, dateEnd.DayNumber - dateStart.DayNumber)
+            .SelectMany(days => Enumerable.Repeat(dateStart.AddDays(days), rowsPerDate))
+            .ToArray();
+        var xValues = Enumerable.Range(0, dateValues.Length).Select(i => i * 0.1f).ToArray();
+        builder.Append("date", false, new Date32Array.Builder().Append(dateValues));
         builder.Append("x", false, new FloatArray.Builder().Append(xValues));
         return builder.Build();
     }
