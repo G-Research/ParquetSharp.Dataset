@@ -76,6 +76,49 @@ public class TestFragmentExpander
     }
 
     [Test]
+    public void TestAddNullPartitionFields()
+    {
+        var datasetSchema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("x", new Int32Type(), false))
+            .Field(new Field("y", new Int32Type(), true))
+            .Field(new Field("z", new StringType(), true))
+            .Build();
+
+        var batchLength = 5;
+        var fragmentData = new RecordBatch.Builder()
+            .Append("x", false, new Int32Array.Builder().Append(Enumerable.Range(0, batchLength).ToArray()))
+            .Build();
+
+        var partitionData = new RecordBatch.Builder()
+            .Append("y", false, new Int32Array.Builder().AppendNull())
+            .Append("z", false, new StringArray.Builder().AppendNull())
+            .Build();
+
+        var expander = new FragmentExpander(datasetSchema);
+
+        var expanded = expander.ExpandBatch(fragmentData, new PartitionInformation(partitionData));
+
+        Assert.That(expanded.Schema.FieldsList.Count, Is.EqualTo(3));
+
+        var xArray = expanded.Column("x") as Int32Array;
+        Assert.That(xArray, Is.Not.Null);
+
+        var yArray = expanded.Column("y") as Int32Array;
+        Assert.That(yArray, Is.Not.Null);
+        Assert.That(yArray!.Length, Is.EqualTo(batchLength));
+
+        var zArray = expanded.Column("z") as StringArray;
+        Assert.That(zArray, Is.Not.Null);
+        Assert.That(zArray!.Length, Is.EqualTo(batchLength));
+
+        for (var i = 0; i < batchLength; ++i)
+        {
+            Assert.That(yArray.IsNull(i));
+            Assert.That(zArray.IsNull(i));
+        }
+    }
+
+    [Test]
     public void TestMissingField()
     {
         var datasetSchema = new Apache.Arrow.Schema.Builder()
