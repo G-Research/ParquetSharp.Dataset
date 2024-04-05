@@ -129,7 +129,9 @@ internal sealed class ConstantArrayCreator
             valueBuilder.Span.Fill(value.Value);
             var valueBuffer = valueBuilder.Build();
 
-            return new ArrayData(array.Data.DataType, _arrayLength, 0, 0, new[] { ArrowBuffer.Empty, valueBuffer });
+            return new ArrayData(
+                array.Data.DataType, length: _arrayLength, nullCount: 0, offset: 0,
+                new[] { ArrowBuffer.Empty, valueBuffer });
         }
         else
         {
@@ -142,7 +144,9 @@ internal sealed class ConstantArrayCreator
             validityBuilder.AppendRange(false, _arrayLength);
             var validityBuffer = validityBuilder.Build();
 
-            return new ArrayData(array.Data.DataType, _arrayLength, _arrayLength, 0, new[] { validityBuffer, valueBuffer });
+            return new ArrayData(
+                array.Data.DataType, length: _arrayLength, nullCount: _arrayLength, offset: 0,
+                new[] { validityBuffer, valueBuffer });
         }
     }
 
