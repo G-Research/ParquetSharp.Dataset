@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ParquetSharp.Dataset;
 
 public interface IPartitioning
@@ -15,5 +17,12 @@ public interface IPartitioning
     /// </summary>
     /// <param name="pathComponents">Relative path within a dataset, split into components</param>
     /// <returns>The parsed partition information.</returns>
-    PartitionInformation Parse(string[] pathComponents);
+    PartitionInformation Parse(IReadOnlyList<string> pathComponents);
+
+    /// <summary>
+    /// Sort partition directories according to partition field values
+    /// </summary>
+    /// <param name="parentPath">The path containing the directories</param>
+    /// <param name="directoryNames">Array of directory names to be sorted</param>
+    void SortDirectories(IReadOnlyList<string> parentPath, string[] directoryNames);
 }

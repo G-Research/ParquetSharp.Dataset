@@ -14,7 +14,7 @@ public sealed class HivePartitioning : IPartitioning
 {
     public sealed class Factory : IPartitioningFactory
     {
-        public void Inspect(string[] pathComponents)
+        public void Inspect(IReadOnlyList<string> pathComponents)
         {
             foreach (var dirName in pathComponents)
             {
@@ -66,10 +66,10 @@ public sealed class HivePartitioning : IPartitioning
 
     public Apache.Arrow.Schema Schema { get; }
 
-    public PartitionInformation Parse(string[] pathComponents)
+    public PartitionInformation Parse(IReadOnlyList<string> pathComponents)
     {
-        var arrays = new List<IArrowArray>(pathComponents.Length);
-        var fields = new List<Field>(pathComponents.Length);
+        var arrays = new List<IArrowArray>(pathComponents.Count);
+        var fields = new List<Field>(pathComponents.Count);
 
         foreach (var dirName in pathComponents)
         {
@@ -107,6 +107,11 @@ public sealed class HivePartitioning : IPartitioning
         }
 
         return new PartitionInformation(new RecordBatch(schemaBuilder.Build(), arrays, 1));
+    }
+
+    public void SortDirectories(IReadOnlyList<string> parentPath, string[] directoryNames)
+    {
+        System.Array.Sort(directoryNames, StringComparer.Ordinal);
     }
 
     private static (string, string) ParseDirectoryName(string directoryName)

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ParquetSharp.Dataset;
 
 public interface IPartitioningFactory
@@ -6,7 +8,7 @@ public interface IPartitioningFactory
     /// Visit a subdirectory containing a data file
     /// </summary>
     /// <param name="pathComponents">Array of directory names containing a data file</param>
-    void Inspect(string[] pathComponents);
+    void Inspect(IReadOnlyList<string> pathComponents);
 
     /// <summary>
     /// Create the partitioning from seen subdirectories

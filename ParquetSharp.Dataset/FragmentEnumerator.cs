@@ -75,6 +75,12 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
             var directoryPath = Path.Join(_rootDirectory, Path.Join(pathComponents));
             var directoryInfo = new DirectoryInfo(directoryPath);
             var directoryListing = ListDirectory(directoryInfo);
+
+            // Sort directories according to partitioning values,
+            // and ensure consistent file ordering within a directory
+            _partitioning.SortDirectories(pathComponents, directoryListing.Directories);
+            Array.Sort(directoryListing.Files, StringComparer.Ordinal);
+
             foreach (var directoryName in directoryListing.Directories)
             {
                 var subdirectoryComponents = new string[pathComponents.Length + 1];
