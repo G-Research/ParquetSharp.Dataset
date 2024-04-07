@@ -33,6 +33,12 @@ internal sealed class PartitionFragment
     public PartitionInformation PartitionInformation { get; }
 }
 
+internal struct DirectoryListing
+{
+    public string[] Files;
+    public string[] Directories;
+}
+
 /// <summary>
 /// Enumerator over data files in a dataset directory
 /// </summary>
@@ -68,23 +74,20 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
 
             var directoryPath = Path.Join(_rootDirectory, Path.Join(pathComponents));
             var directoryInfo = new DirectoryInfo(directoryPath);
-            foreach (var fsi in directoryInfo.GetFileSystemInfos())
+            var directoryListing = ListDirectory(directoryInfo);
+            foreach (var directoryName in directoryListing.Directories)
             {
-                if ((fsi.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+                var subdirectoryComponents = new string[pathComponents.Length + 1];
+                Array.Copy(pathComponents, subdirectoryComponents, pathComponents.Length);
+                subdirectoryComponents[pathComponents.Length] = directoryName;
+                _directoryQueue.Enqueue(subdirectoryComponents);
+            }
+
+            foreach (var fileName in directoryListing.Files)
+            {
+                if (Path.GetExtension(fileName).Equals(".parquet", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Subdirectory
-                    var subdirectoryComponents = new string[pathComponents.Length + 1];
-                    Array.Copy(pathComponents, subdirectoryComponents, pathComponents.Length);
-                    subdirectoryComponents[pathComponents.Length] = fsi.Name;
-                    _directoryQueue.Enqueue(subdirectoryComponents);
-                }
-                else
-                {
-                    // File
-                    if (fsi.Extension.Equals(".parquet", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _fileQueue.Enqueue(fsi.FullName);
-                    }
+                    _fileQueue.Enqueue(Path.Join(directoryPath, fileName));
                 }
             }
         }
@@ -120,6 +123,29 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
 
     public void Dispose()
     {
+    }
+
+    private static DirectoryListing ListDirectory(DirectoryInfo directory)
+    {
+        var directories = new List<string>();
+        var files = new List<string>();
+        foreach (var fsi in directory.GetFileSystemInfos())
+        {
+            if ((fsi.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
+            {
+                directories.Add(fsi.Name);
+            }
+            else
+            {
+                files.Add(fsi.Name);
+            }
+        }
+
+        return new DirectoryListing
+        {
+            Directories = directories.ToArray(),
+            Files = files.ToArray(),
+        };
     }
 
     private readonly IFilter? _filter;
