@@ -684,6 +684,70 @@ public class TestDatasetReader
         }
     }
 
+    [Test]
+    public static async Task TestDataOrderedByPartitionFields()
+    {
+        using var tmpDir = new DisposableDirectory();
+        WriteParquetFile(tmpDir.AbsPath("part0=defg/part1=13/data0.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=defg/part1=2/data0.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=abc/part1=24/data1.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=abc/part1=3/data1.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=defg/part1=11/data0.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=defg/part1=5/data0.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=abc/part1=12/data1.parquet"), GenerateBatch(0));
+        WriteParquetFile(tmpDir.AbsPath("part0=abc/part1=6/data1.parquet"), GenerateBatch(0));
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part0", new StringType(), false))
+            .Field(new Field("part1", new Int32Type(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("part0", new StringType(), false))
+                .Field(new Field("part1", new Int32Type(), false))
+                .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema: schema);
+
+        using var reader = dataset.ToBatches();
+
+        var prevPart0Value = "aaa";
+        var prevPart1Value = -1;
+
+        while (await reader.ReadNextRecordBatchAsync() is { } batch)
+        {
+            using (batch)
+            {
+                var part0Array = batch.Column("part0") as StringArray;
+                Assert.That(part0Array, Is.Not.Null);
+                var part0Value = part0Array!.GetString(0);
+                Assert.That(part0Value, Is.GreaterThanOrEqualTo(prevPart0Value));
+
+                var part1Array = batch.Column("part1") as Int32Array;
+                Assert.That(part1Array, Is.Not.Null);
+                var part1Value = part1Array!.GetValue(0);
+                Assert.That(part1Value.HasValue);
+                if (part0Value == prevPart0Value)
+                {
+                    Assert.That(part1Value!.Value, Is.GreaterThanOrEqualTo(prevPart1Value));
+                }
+
+                for (var i = 1; i < batch.Length; ++i)
+                {
+                    Assert.That(part0Array.GetString(i), Is.EqualTo(part0Value));
+                    Assert.That(part1Array.GetValue(i), Is.EqualTo(part1Value));
+                }
+
+                prevPart0Value = part0Value;
+                prevPart1Value = part1Value!.Value;
+            }
+        }
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,
