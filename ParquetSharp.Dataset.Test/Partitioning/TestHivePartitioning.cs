@@ -3,6 +3,7 @@ using Apache.Arrow;
 using Apache.Arrow.Types;
 using NUnit.Framework;
 using ParquetSharp.Dataset.Partitioning;
+using Array = System.Array;
 
 namespace ParquetSharp.Dataset.Test.Partitioning;
 
@@ -232,5 +233,56 @@ public class TestHivePartitioning
 
         var exception = Assert.Throws<Exception>(() => factory.Build(datasetSchema));
         Assert.That(exception!.Message, Does.Contain("'y'"));
+    }
+
+    [Test]
+    public void TestPartitionDirectoryOrdering([Values] bool intType)
+    {
+        var partitioningSchema = new Apache.Arrow.Schema.Builder()
+            .Field(intType
+                ? new Field("x", new Int64Type(), nullable: true)
+                : new Field("x", new StringType(), nullable: true))
+            .Build();
+
+        var partitioning = new HivePartitioning(partitioningSchema);
+
+        var directories = new[]
+        {
+            "x=-0",
+            "x=1",
+            "x=12",
+            "x=__HIVE_DEFAULT_PARTITION__",
+            "x=4",
+            "x=002",
+            "x=-100",
+            "x=+3",
+        };
+        var expectedOrder = intType
+            ? new[]
+            {
+                "x=-100",
+                "x=-0",
+                "x=1",
+                "x=002",
+                "x=+3",
+                "x=4",
+                "x=12",
+                "x=__HIVE_DEFAULT_PARTITION__",
+            }
+            : new[]
+            {
+                "x=+3",
+                "x=-0",
+                "x=-100",
+                "x=002",
+                "x=1",
+                "x=12",
+                "x=4",
+                "x=__HIVE_DEFAULT_PARTITION__",
+            };
+
+        partitioning.SortDirectories(Array.Empty<string>(), directories);
+
+        Assert.That(directories, Is.EqualTo(expectedOrder));
     }
 }
