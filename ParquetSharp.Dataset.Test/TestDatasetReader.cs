@@ -208,6 +208,35 @@ public class TestDatasetReader
     }
 
     [Test]
+    public void TestSpecifyInvalidExcludeColumn([Values] bool asTable)
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch1);
+
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning());
+
+        ArgumentException exception;
+        var excludedColumns = new[] { "x", "invalid_column" };
+        if (asTable)
+        {
+            exception = Assert.ThrowsAsync<ArgumentException>(async () => await dataset.ToTable(
+                excludeColumns: excludedColumns))!;
+        }
+        else
+        {
+            exception = Assert.Throws<ArgumentException>(() => dataset.ToBatches(
+                excludeColumns: excludedColumns))!;
+        }
+
+        Assert.That(exception.Message, Does.Contain("Invalid column name 'invalid_column' in excluded columns"));
+    }
+
+    [Test]
     public async Task TestReadExcludingPartitionColumn()
     {
         using var tmpDir = new DisposableDirectory();

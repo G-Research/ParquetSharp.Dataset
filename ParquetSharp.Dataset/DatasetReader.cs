@@ -167,7 +167,18 @@ public sealed class DatasetReader
         else if (excludeColumns != null)
         {
             var schemaBuilder = new Apache.Arrow.Schema.Builder();
-            var excludeColumnsSet = new HashSet<string>(excludeColumns, StringComparer.Ordinal);
+            var excludeColumnsSet = new HashSet<string>(excludeColumns.Count, StringComparer.Ordinal);
+            foreach (var excludeColumn in excludeColumns)
+            {
+                if (!Schema.FieldsLookup.Contains(excludeColumn))
+                {
+                    throw new ArgumentException(
+                        $"Invalid column name '{excludeColumn}' in excluded columns", nameof(excludeColumns));
+                }
+
+                excludeColumnsSet.Add(excludeColumn);
+            }
+
             foreach (var field in Schema.FieldsList)
             {
                 if (!excludeColumnsSet.Contains(field.Name))
