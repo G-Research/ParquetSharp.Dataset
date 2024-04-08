@@ -98,11 +98,16 @@ public sealed class DatasetReader
     /// Read a dataset to an Arrow Table
     /// </summary>
     /// <param name="filter">Optional filter to limit rows read</param>
-    /// <param name="columns">Names of columns to read</param>
+    /// <param name="columns">Optional list of names of columns to read</param>
+    /// <param name="excludeColumns">Optional list of names of columns to exclude.
+    /// Cannot be set if columns is also set. If neither is set then all columns are read.</param>
     /// <returns>Selected dataset data as a table</returns>
-    public async Task<Table> ToTable(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
+    public async Task<Table> ToTable(
+        IFilter? filter = null,
+        IReadOnlyCollection<string>? columns = null,
+        IReadOnlyCollection<string>? excludeColumns = null)
     {
-        var arrayStream = ToBatches(filter, columns);
+        var arrayStream = ToBatches(filter, columns: columns, excludeColumns: excludeColumns);
         var batches = new List<RecordBatch>();
         while (await arrayStream.ReadNextRecordBatchAsync() is { } batch)
         {
@@ -116,10 +121,20 @@ public sealed class DatasetReader
     /// Read a dataset to an Arrow RecordBatch stream
     /// </summary>
     /// <param name="filter">Optional filter to limit rows read</param>
-    /// <param name="columns">Names of columns to read</param>
+    /// <param name="columns">Optional list of names of columns to read</param>
+    /// <param name="excludeColumns">Optional list of names of columns to exclude.
+    /// Cannot be set if columns is also set. If neither is set then all columns are read.</param>
     /// <returns>Selected dataset data as an IArrowArrayStream</returns>
-    public IArrowArrayStream ToBatches(IFilter? filter = null, IReadOnlyCollection<string>? columns = null)
+    public IArrowArrayStream ToBatches(
+        IFilter? filter = null,
+        IReadOnlyCollection<string>? columns = null,
+        IReadOnlyCollection<string>? excludeColumns = null)
     {
+        if (columns != null && excludeColumns != null)
+        {
+            throw new Exception("Cannot specify both columns and excludeColumns");
+        }
+
         if (filter != null)
         {
             foreach (var column in filter.Columns())
@@ -133,11 +148,7 @@ public sealed class DatasetReader
         }
 
         Apache.Arrow.Schema schema;
-        if (columns == null)
-        {
-            schema = Schema;
-        }
-        else
+        if (columns != null)
         {
             var schemaBuilder = new Apache.Arrow.Schema.Builder();
             foreach (var columnName in columns)
@@ -152,6 +163,24 @@ public sealed class DatasetReader
             }
 
             schema = schemaBuilder.Build();
+        }
+        else if (excludeColumns != null)
+        {
+            var schemaBuilder = new Apache.Arrow.Schema.Builder();
+            var excludeColumnsSet = new HashSet<string>(excludeColumns, StringComparer.Ordinal);
+            foreach (var field in Schema.FieldsList)
+            {
+                if (!excludeColumnsSet.Contains(field.Name))
+                {
+                    schemaBuilder.Field(field);
+                }
+            }
+
+            schema = schemaBuilder.Build();
+        }
+        else
+        {
+            schema = Schema;
         }
 
         return new DatasetStreamReader(

@@ -79,7 +79,7 @@ public class TestDatasetReader
     }
 
     [Test]
-    public async Task TestReadColumnSubset()
+    public async Task TestReadColumnSubset([Values] bool asTable)
     {
         using var tmpDir = new DisposableDirectory();
         using var batch0 = GenerateBatch(0);
@@ -102,19 +102,109 @@ public class TestDatasetReader
             schema: schema);
 
         // Read all files, but a subset of columns
-        using var reader = dataset.ToBatches(columns: new[] { "id", "part" });
-        Assert.That(reader.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(new[] { "id", "part" }));
-
-        while (await reader.ReadNextRecordBatchAsync() is { } batch)
+        var expectedColumns = new[] { "id", "part" };
+        if (asTable)
         {
-            using (batch)
+            var table = await dataset.ToTable(columns: expectedColumns);
+            Assert.That(table.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(expectedColumns));
+            Assert.That(table.ColumnCount, Is.EqualTo(2));
+        }
+        else
+        {
+            using var reader = dataset.ToBatches(columns: expectedColumns);
+            Assert.That(reader.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(expectedColumns));
+
+            while (await reader.ReadNextRecordBatchAsync() is { } batch)
             {
-                Assert.That(batch.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(new[] { "id", "part" }));
-                Assert.That(batch.ColumnCount, Is.EqualTo(2));
-                Assert.That(batch.Column(0), Is.InstanceOf<Int32Array>());
-                Assert.That(batch.Column(1), Is.InstanceOf<StringArray>());
+                using (batch)
+                {
+                    Assert.That(batch.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(expectedColumns));
+                    Assert.That(batch.ColumnCount, Is.EqualTo(2));
+                    Assert.That(batch.Column(0), Is.InstanceOf<Int32Array>());
+                    Assert.That(batch.Column(1), Is.InstanceOf<StringArray>());
+                }
             }
         }
+    }
+
+    [Test]
+    public async Task TestExcludeColumnSubset([Values] bool asTable)
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("part0=a/part1=0/data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("part0=b/part1=1/data0.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part0", new StringType(), false))
+            .Field(new Field("part1", new Int32Type(), false))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var partitioning = new HivePartitioning(
+            new Apache.Arrow.Schema.Builder()
+                .Field(new Field("part0", new StringType(), false))
+                .Field(new Field("part1", new Int32Type(), false))
+                .Build());
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioning,
+            schema: schema);
+
+        // Read all files, but exclude a subset of columns
+        var excludedColumns = new[] { "x", "part1" };
+        var expectedColumns = new[] { "part0", "id" };
+        if (asTable)
+        {
+            var table = await dataset.ToTable(excludeColumns: excludedColumns);
+            Assert.That(table.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(expectedColumns));
+            Assert.That(table.ColumnCount, Is.EqualTo(2));
+        }
+        else
+        {
+            using var reader = dataset.ToBatches(excludeColumns: excludedColumns);
+            Assert.That(reader.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(expectedColumns));
+
+            while (await reader.ReadNextRecordBatchAsync() is { } batch)
+            {
+                using (batch)
+                {
+                    Assert.That(batch.Schema.FieldsList.Select(f => f.Name), Is.EqualTo(expectedColumns));
+                    Assert.That(batch.ColumnCount, Is.EqualTo(2));
+                    Assert.That(batch.Column(0), Is.InstanceOf<StringArray>());
+                    Assert.That(batch.Column(1), Is.InstanceOf<Int32Array>());
+                }
+            }
+        }
+    }
+
+    [Test]
+    public void TestSpecifyColumnsAndExcludeColumns([Values] bool asTable)
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0);
+        using var batch1 = GenerateBatch(1);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch1);
+
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning());
+
+        Exception exception;
+        if (asTable)
+        {
+            exception = Assert.ThrowsAsync<Exception>(async () => await dataset.ToTable(
+                columns: new[] { "id" }, excludeColumns: new[] { "x" }))!;
+        }
+        else
+        {
+            exception = Assert.Throws<Exception>(() => dataset.ToBatches(
+                columns: new[] { "id" }, excludeColumns: new[] { "x" }))!;
+        }
+
+        Assert.That(exception.Message, Is.EqualTo("Cannot specify both columns and excludeColumns"));
     }
 
     [Test]
