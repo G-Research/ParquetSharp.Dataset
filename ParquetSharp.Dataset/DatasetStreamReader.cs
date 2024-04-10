@@ -115,6 +115,7 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
             var rowGroups = _rowGroupSelector?.GetRequiredRowGroups(_currentFileReader);
             if (rowGroups != null && rowGroups.Length == 0)
             {
+                _currentFileReader.Dispose();
                 continue;
             }
 
