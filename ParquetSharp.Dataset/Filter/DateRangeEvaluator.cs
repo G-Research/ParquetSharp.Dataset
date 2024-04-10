@@ -26,7 +26,7 @@ internal sealed class DateRangeEvaluator :
             var endNumber = _end.DayNumber - ArrowEpoch.DayNumber;
             if (inputArray.NullCount == 0)
             {
-                var values = array.Values;
+                var values = inputArray.Values;
                 for (var i = 0; i < inputArray.Length; ++i)
                 {
                     var value = values[i];
@@ -38,7 +38,7 @@ internal sealed class DateRangeEvaluator :
             {
                 for (var i = 0; i < inputArray.Length; ++i)
                 {
-                    var value = array.GetValue(i);
+                    var value = inputArray.GetValue(i);
                     var isInRange = value.HasValue && value.Value >= startNumber && value.Value <= endNumber;
                     BitUtility.SetBit(mask, i, isInRange);
                 }
@@ -54,7 +54,7 @@ internal sealed class DateRangeEvaluator :
         {
             for (var i = 0; i < inputArray.Length; ++i)
             {
-                var value = array.GetDateOnly(i);
+                var value = inputArray.GetDateOnly(i);
                 var isInRange = value.HasValue && value.Value >= _start && value.Value <= _end;
                 BitUtility.SetBit(mask, i, isInRange);
             }
