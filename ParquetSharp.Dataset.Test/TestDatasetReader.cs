@@ -70,12 +70,18 @@ public class TestDatasetReader
             new Dictionary<string, int> { { "a", 20 }, { "b", 20 } });
 
         // Read filtered on partition
-        var filter = Col.Named("part").IsEqualTo("b");
+        var filter = new InstrumentedFilter(Col.Named("part").IsEqualTo("b"));
         using var filteredReader = dataset.ToBatches(filter);
         await VerifyData(
             filteredReader,
             new Dictionary<int, int> { { 2, 10 }, { 3, 10 } },
             new Dictionary<string, int> { { "b", 20 } });
+
+        // IncludePartition is called for the root directory and 2 subdirectories
+        Assert.That(filter.IncludePartitionCallCount, Is.EqualTo(3));
+        // No data files are used in the filter, so row group filtering is not used
+        Assert.That(filter.IncludeRowGroupCallCount, Is.EqualTo(0));
+        Assert.That(filter.ComputeMaskRowCount, Is.EqualTo(20));
     }
 
     [Test]
@@ -295,10 +301,15 @@ public class TestDatasetReader
             new NoPartitioning(),
             schema: schema);
 
-        var filter = Col.Named("id").IsInRange(0, 1);
+        var filter = new InstrumentedFilter(Col.Named("id").IsInRange(0, 1));
         using var reader = dataset.ToBatches(filter);
 
         await VerifyData(reader, new Dictionary<int, int> { { 0, 10 }, { 1, 10 } });
+
+        Assert.That(filter.IncludePartitionCallCount, Is.EqualTo(1));
+        Assert.That(filter.IncludeRowGroupCallCount, Is.EqualTo(4));
+        // Should only read data from one row group (10 rows) from each file
+        Assert.That(filter.ComputeMaskRowCount, Is.EqualTo(20));
     }
 
     [Test]
@@ -321,10 +332,15 @@ public class TestDatasetReader
             new NoPartitioning(),
             schema: schema);
 
-        var filter = Col.Named("id").IsEqualTo(2);
+        var filter = new InstrumentedFilter(Col.Named("id").IsEqualTo(2));
         using var reader = dataset.ToBatches(filter);
 
         await VerifyData(reader, new Dictionary<int, int> { { 2, 10 } });
+
+        Assert.That(filter.IncludePartitionCallCount, Is.EqualTo(1));
+        Assert.That(filter.IncludeRowGroupCallCount, Is.EqualTo(4));
+        // Should only read data from one row group (10 rows) from the second file
+        Assert.That(filter.ComputeMaskRowCount, Is.EqualTo(10));
     }
 
     [Test]

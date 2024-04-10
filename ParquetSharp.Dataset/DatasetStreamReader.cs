@@ -107,22 +107,27 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         _currentFragmentReader?.Dispose();
         _currentFileReader?.Dispose();
 
-        if (_fragmentEnumerator.MoveNext())
+        while (_fragmentEnumerator.MoveNext())
         {
             _currentFileReader = new FileReader(
                 _fragmentEnumerator.Current.FilePath, _readerProperties, _arrowReaderProperties);
 
             var rowGroups = _rowGroupSelector?.GetRequiredRowGroups(_currentFileReader);
+            if (rowGroups != null && rowGroups.Length == 0)
+            {
+                continue;
+            }
+
             var columnIndices = GetFileColumnIndices(_currentFileReader);
 
             _currentFragmentReader = _currentFileReader.GetRecordBatchReader(
                 rowGroups: rowGroups, columns: columnIndices);
+
+            return;
         }
-        else
-        {
-            _currentFileReader = null;
-            _currentFragmentReader = null;
-        }
+
+        _currentFileReader = null;
+        _currentFragmentReader = null;
     }
 
     private int[] GetFileColumnIndices(FileReader fileReader)
