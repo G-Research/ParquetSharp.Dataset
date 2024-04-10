@@ -36,6 +36,33 @@ public class TestDatasetReader
     }
 
     [Test]
+    public async Task TestReadMultipleBatchesPerFile()
+    {
+        using var tmpDir = new DisposableDirectory();
+        using var batch0 = GenerateBatch(0, numRows: 10_123);
+        using var batch1 = GenerateBatch(1, numRows: 10_123);
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+
+        // Test with batch size less than the number of rows per file
+        using var readerProperties = ArrowReaderProperties.GetDefault();
+        readerProperties.BatchSize = 1_000;
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning(),
+            schema: schema,
+            arrowReaderProperties: readerProperties);
+
+        using var reader = dataset.ToBatches();
+        await VerifyData(reader, new Dictionary<int, int> { { 0, 10_123 }, { 1, 10_123 } });
+    }
+
+    [Test]
     public async Task TestReadMultipleFilesWithHivePartitioning()
     {
         using var tmpDir = new DisposableDirectory();
