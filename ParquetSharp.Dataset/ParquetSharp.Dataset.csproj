@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup Label="Additional nuget files">
+    <None Include="../LICENSE" Pack="true" PackagePath="\" />
     <None Include="../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
