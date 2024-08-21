@@ -119,7 +119,39 @@ public class TestFragmentExpander
     }
 
     [Test]
-    public void TestMissingField()
+    public void TestMissingNullableDataField()
+    {
+        var datasetSchema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("x", new Int32Type(), false))
+            .Field(new Field("y", new Int32Type(), false))
+            .Field(new Field("z", new StringType(), true))
+            .Build();
+
+        var batchLength = 5;
+        var fragmentData = new RecordBatch.Builder()
+            .Append("x", false, new Int32Array.Builder().Append(Enumerable.Range(0, batchLength).ToArray()))
+            .Build();
+
+        var partitionData = new RecordBatch.Builder()
+            .Append("y", false, new Int32Array.Builder().Append(5))
+            .Build();
+
+        var expander = new FragmentExpander(datasetSchema);
+
+        var expanded = expander.ExpandBatch(fragmentData, new PartitionInformation(partitionData));
+
+        var zArray = expanded.Column("z");
+
+        Assert.That(zArray.Length, Is.EqualTo(batchLength));
+        Assert.That(zArray.NullCount, Is.EqualTo(batchLength));
+        for (var i = 0; i < batchLength; ++i)
+        {
+            Assert.That(zArray.IsNull(i));
+        }
+    }
+
+    [Test]
+    public void TestMissingNonNullableDataField()
     {
         var datasetSchema = new Apache.Arrow.Schema.Builder()
             .Field(new Field("x", new Int32Type(), false))

@@ -910,6 +910,61 @@ public class TestDatasetReader
         }
     }
 
+    [Test]
+    public static async Task TestMissingDataColumn()
+    {
+        using var tmpDir = new DisposableDirectory();
+        var batch0 = new RecordBatch.Builder()
+            .Append("x", false, b => b.Int32(ib => ib.AppendRange(new[] { 0, 1, 2, 3 })))
+            .Append("y", true, b => b.Float(ib => ib.AppendRange(new[] { 0.0f, 1.0f, 2.0f, 3.0f })))
+            .Build();
+        var batch1 = new RecordBatch.Builder()
+            .Append("x", false, b => b.Int32(ib => ib.AppendRange(new[] { 4, 5, 6, 7 })))
+            .Build();
+        WriteParquetFile(tmpDir.AbsPath("data0.parquet"), batch0);
+        WriteParquetFile(tmpDir.AbsPath("data1.parquet"), batch1);
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("x", new Int32Type(), false))
+            .Field(new Field("y", new FloatType(), true))
+            .Build();
+
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            schema: schema);
+
+        using var reader = dataset.ToBatches();
+
+        var rowOffset = 0;
+        while (await reader.ReadNextRecordBatchAsync() is { } batch)
+        {
+            using (batch)
+            {
+                var xArray = batch.Column("x") as Int32Array;
+                var yArray = batch.Column("y") as FloatArray;
+                Assert.That(xArray, Is.Not.Null);
+                Assert.That(yArray, Is.Not.Null);
+
+                for (var i = 1; i < batch.Length; ++i)
+                {
+                    var rowIndex = rowOffset + i;
+                    // Data files are guaranteed to be read in alphabetical order
+                    Assert.That(xArray.GetValue(i), Is.EqualTo(rowIndex));
+                    if (rowIndex < 4)
+                    {
+                        Assert.That(yArray.GetValue(i), Is.EqualTo((float)rowIndex));
+                    }
+                    else
+                    {
+                        Assert.That(yArray.GetValue(i), Is.Null);
+                    }
+                }
+
+                rowOffset += batch.Length;
+            }
+        }
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,
