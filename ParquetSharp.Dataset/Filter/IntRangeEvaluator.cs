@@ -28,13 +28,14 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < 0 || _start > byte.MaxValue)
+            if (_end <= 0 || _start > byte.MaxValue)
             {
                 mask.AsSpan().Fill(0);
             }
             else
             {
-                ComputeMask(mask, inputArray, (byte)Math.Max(_start, 0L), (byte)Math.Min(_end, byte.MaxValue));
+                var end = _end > byte.MaxValue ? null : (byte?)_end;
+                ComputeMask(mask, inputArray, (byte)Math.Max(_start, 0L), end);
             }
         });
     }
@@ -43,13 +44,14 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < 0 || _start > ushort.MaxValue)
+            if (_end <= 0 || _start > ushort.MaxValue)
             {
                 mask.AsSpan().Fill(0);
             }
             else
             {
-                ComputeMask(mask, inputArray, (ushort)Math.Max(_start, 0L), (ushort)Math.Min(_end, ushort.MaxValue));
+                var end = _end > ushort.MaxValue ? null : (ushort?)_end;
+                ComputeMask(mask, inputArray, (ushort)Math.Max(_start, 0L), end);
             }
         });
     }
@@ -58,13 +60,14 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < 0 || _start > uint.MaxValue)
+            if (_end <= 0 || _start > uint.MaxValue)
             {
                 mask.AsSpan().Fill(0);
             }
             else
             {
-                ComputeMask(mask, inputArray, (uint)Math.Max(_start, 0L), (uint)Math.Min(_end, uint.MaxValue));
+                var end = _end > uint.MaxValue ? null : (uint?)_end;
+                ComputeMask(mask, inputArray, (uint)Math.Max(_start, 0L), end);
             }
         });
     }
@@ -73,7 +76,7 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < 0)
+            if (_end <= 0)
             {
                 mask.AsSpan().Fill(0);
             }
@@ -88,13 +91,14 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < sbyte.MinValue || _start > sbyte.MaxValue)
+            if (_end <= sbyte.MinValue || _start > sbyte.MaxValue)
             {
                 mask.AsSpan().Fill(0);
             }
             else
             {
-                ComputeMask(mask, inputArray, (sbyte)Math.Max(_start, sbyte.MinValue), (sbyte)Math.Min(_end, sbyte.MaxValue));
+                var end = _end > sbyte.MaxValue ? null : (sbyte?)_end;
+                ComputeMask(mask, inputArray, (sbyte)Math.Max(_start, sbyte.MinValue), end);
             }
         });
     }
@@ -103,13 +107,14 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < short.MinValue || _start > short.MaxValue)
+            if (_end <= short.MinValue || _start > short.MaxValue)
             {
                 mask.AsSpan().Fill(0);
             }
             else
             {
-                ComputeMask(mask, inputArray, (short)Math.Max(_start, short.MinValue), (short)Math.Min(_end, short.MaxValue));
+                var end = _end > short.MaxValue ? null : (short?)_end;
+                ComputeMask(mask, inputArray, (short)Math.Max(_start, short.MinValue), end);
             }
         });
     }
@@ -118,13 +123,14 @@ internal sealed class IntRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            if (_end < int.MinValue || _start > int.MaxValue)
+            if (_end <= int.MinValue || _start > int.MaxValue)
             {
                 mask.AsSpan().Fill(0);
             }
             else
             {
-                ComputeMask(mask, inputArray, (int)Math.Max(_start, int.MinValue), (int)Math.Min(_end, int.MaxValue));
+                var end = _end > int.MaxValue ? null : (int?)_end;
+                ComputeMask(mask, inputArray, (int)Math.Max(_start, int.MinValue), end);
             }
         });
     }
@@ -134,7 +140,7 @@ internal sealed class IntRangeEvaluator :
         BuildMask(array, (mask, inputArray) => ComputeMask(mask, inputArray, _start, _end));
     }
 
-    private static void ComputeMask<T, TArray>(byte[] mask, TArray array, T rangeStart, T rangeEnd)
+    private static void ComputeMask<T, TArray>(byte[] mask, TArray array, T rangeStart, T? rangeEnd)
         where T : struct, IComparable<T>
         where TArray : PrimitiveArray<T>
     {
@@ -144,7 +150,7 @@ internal sealed class IntRangeEvaluator :
             for (var i = 0; i < array.Length; ++i)
             {
                 var value = values[i];
-                BitUtility.SetBit(mask, i, value.CompareTo(rangeStart) >= 0 && value.CompareTo(rangeEnd) <= 0);
+                BitUtility.SetBit(mask, i, value.CompareTo(rangeStart) >= 0 && (!rangeEnd.HasValue || value.CompareTo(rangeEnd.Value) < 0));
             }
         }
         else
@@ -154,7 +160,7 @@ internal sealed class IntRangeEvaluator :
                 var value = array.GetValue(i);
                 BitUtility.SetBit(
                     mask, i,
-                    value.HasValue && value.Value.CompareTo(rangeStart) >= 0 && value.Value.CompareTo(rangeEnd) <= 0);
+                    value.HasValue && value.Value.CompareTo(rangeStart) >= 0 && (!rangeEnd.HasValue || value.Value.CompareTo(rangeEnd.Value) < 0));
             }
         }
     }

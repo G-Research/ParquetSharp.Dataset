@@ -328,7 +328,7 @@ public class TestDatasetReader
             new NoPartitioning(),
             schema: schema);
 
-        var filter = new InstrumentedFilter(Col.Named("id").IsInRange(0, 1));
+        var filter = new InstrumentedFilter(Col.Named("id").IsInRange(0, 2));
         using var reader = dataset.ToBatches(filter);
 
         await VerifyData(reader, new Dictionary<int, int> { { 0, 10 }, { 1, 10 } });
@@ -826,7 +826,7 @@ public class TestDatasetReader
         var filters = new[]
         {
             (Col.Named("part").IsEqualTo(3), "part"),
-            (Col.Named("part").IsInRange(1, 5), "part"),
+            (Col.Named("part").IsInRange(1, 6), "part"),
             (Col.Named("part_id").IsEqualTo("abc"), "part_id"),
         };
 

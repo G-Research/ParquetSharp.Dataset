@@ -23,8 +23,8 @@ public static class ColExtensions
     /// Filter based on an integer typed column being within a specified range
     /// </summary>
     /// <param name="column">The column to add the condition on</param>
-    /// <param name="start">The first value of the range (inclusive)</param>
-    /// <param name="end">The last value of the range (inclusive)</param>
+    /// <param name="start">The start value of the range (inclusive)</param>
+    /// <param name="end">The end value of the range (exclusive)</param>
     /// <returns>Created filter</returns>
     public static IFilter IsInRange(this Col column, long start, long end)
     {
@@ -58,8 +58,8 @@ public static class ColExtensions
     /// Filter based on a date typed column being within a specified date range
     /// </summary>
     /// <param name="column">The date column to add the condition on</param>
-    /// <param name="start">The first date of the range (inclusive)</param>
-    /// <param name="end">The last date of the range (inclusive)</param>
+    /// <param name="start">The start date of the range (inclusive)</param>
+    /// <param name="end">The end date of the range (exclusive)</param>
     /// <returns>Created filter</returns>
     public static IFilter IsInRange(this Col column, DateOnly start, DateOnly end)
     {

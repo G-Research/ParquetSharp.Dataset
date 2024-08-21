@@ -17,7 +17,7 @@ public class TestDateFilter<TArray, TUnderlying, TBuilder>
     public void TestComputeMask()
     {
         var rangeStart = new DateOnly(2024, 2, 1);
-        var rangeEnd = new DateOnly(2024, 2, 10);
+        var rangeEnd = new DateOnly(2024, 2, 11);
         var filter = Col.Named("date").IsInRange(rangeStart, rangeEnd);
 
         var dateValues = Enumerable.Range(0, 100)
@@ -50,7 +50,7 @@ public class TestDateFilter
     [Test]
     public void TestComputeMaskWithInvalidColumnType()
     {
-        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 1), new DateOnly(2024, 2, 10));
+        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 1), new DateOnly(2024, 2, 11));
 
         var dateArray = new Int32Array.Builder()
             .AppendRange(Enumerable.Range(0, 100))
@@ -67,7 +67,7 @@ public class TestDateFilter
     [Test]
     public void TestIncludeRowGroup()
     {
-        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 1), new DateOnly(2024, 2, 10));
+        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 1), new DateOnly(2024, 2, 11));
 
         foreach (var (min, max, expectInclude) in new[]
                  {

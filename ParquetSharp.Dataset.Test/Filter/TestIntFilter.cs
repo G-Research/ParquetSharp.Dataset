@@ -219,7 +219,7 @@ public class TestIntFilter
                 try
                 {
                     var asLong = checkedCast(arrayValue.Value);
-                    isInRange = asLong >= rangeStart && asLong <= rangeEnd;
+                    isInRange = asLong >= rangeStart && asLong < rangeEnd;
                 }
                 catch (OverflowException)
                 {
@@ -228,7 +228,7 @@ public class TestIntFilter
 
             Assert.That(
                 isIncluded, Is.EqualTo(isInRange),
-                $"Expected {typeof(T)} value {arrayValue} inclusion to be {isInRange}");
+                $"Expected {typeof(T)} value {arrayValue} inclusion to be {isInRange} for range [{rangeStart}, {rangeEnd})");
         }
     }
 
@@ -301,7 +301,7 @@ public class TestIntFilter
             try
             {
                 var longMin = checkedCast(statsRange.min);
-                if (longMin > rangeEnd)
+                if (longMin >= rangeEnd)
                 {
                     rangesOverlap = false;
                 }

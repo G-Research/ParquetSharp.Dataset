@@ -63,7 +63,7 @@ public class TestRowGroupSelector
         var batch2 = GenerateBatch(20, 30);
         WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: enableStatistics);
 
-        var filter = Col.Named("id").IsInRange(15, 25);
+        var filter = Col.Named("id").IsInRange(15, 26);
         var rowGroupSelector = new RowGroupSelector(filter);
 
         using var reader = new FileReader(filePath);
@@ -83,7 +83,7 @@ public class TestRowGroupSelector
         var batch2 = GenerateBatchWithDateColumn(new DateOnly(2024, 3, 1), new DateOnly(2024, 3, 31));
         WriteParquetFile(filePath, new[] { batch0, batch1, batch2 }, includeStats: enableStatistics);
 
-        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 5), new DateOnly(2024, 3, 5));
+        var filter = Col.Named("date").IsInRange(new DateOnly(2024, 2, 5), new DateOnly(2024, 3, 6));
         var rowGroupSelector = new RowGroupSelector(filter);
 
         using var reader = new FileReader(filePath);

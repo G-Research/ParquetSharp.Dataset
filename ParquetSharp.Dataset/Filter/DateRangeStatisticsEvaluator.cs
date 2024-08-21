@@ -18,7 +18,7 @@ internal sealed class DateRangeStatisticsEvaluator
 
     public bool Visit(LogicalStatistics<DateOnly> stats)
     {
-        return _end >= stats.Min && _start <= stats.Max;
+        return _end > stats.Min && _start <= stats.Max;
     }
 
     private readonly DateOnly _start;

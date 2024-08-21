@@ -30,7 +30,7 @@ internal sealed class DateRangeEvaluator :
                 for (var i = 0; i < inputArray.Length; ++i)
                 {
                     var value = values[i];
-                    var isInRange = value >= startNumber && value <= endNumber;
+                    var isInRange = value >= startNumber && value < endNumber;
                     BitUtility.SetBit(mask, i, isInRange);
                 }
             }
@@ -39,7 +39,7 @@ internal sealed class DateRangeEvaluator :
                 for (var i = 0; i < inputArray.Length; ++i)
                 {
                     var value = inputArray.GetValue(i);
-                    var isInRange = value.HasValue && value.Value >= startNumber && value.Value <= endNumber;
+                    var isInRange = value.HasValue && value.Value >= startNumber && value.Value < endNumber;
                     BitUtility.SetBit(mask, i, isInRange);
                 }
             }
@@ -55,7 +55,7 @@ internal sealed class DateRangeEvaluator :
             for (var i = 0; i < inputArray.Length; ++i)
             {
                 var value = inputArray.GetDateOnly(i);
-                var isInRange = value.HasValue && value.Value >= _start && value.Value <= _end;
+                var isInRange = value.HasValue && value.Value >= _start && value.Value < _end;
                 BitUtility.SetBit(mask, i, isInRange);
             }
         });
