@@ -31,6 +31,13 @@ public abstract class LogicalStatistics
                 (Statistics<float> stats, NoneLogicalType) => CreateStatistics<float, float>(stats, val => val),
                 (Statistics<double> stats, NoneLogicalType) => CreateStatistics<double, double>(stats, val => val),
                 (Statistics<int> stats, DateLogicalType) => CreateStatistics<int, DateOnly>(stats, LogicalRead.ToDateOnly),
+                (Statistics<long> stats, TimestampLogicalType timestampType) => timestampType.TimeUnit switch
+                {
+                    TimeUnit.Millis => CreateStatistics<long, DateTime>(stats, LogicalRead.ToDateTimeMillis),
+                    TimeUnit.Micros => CreateStatistics<long, DateTime>(stats, LogicalRead.ToDateTimeMicros),
+                    TimeUnit.Nanos => CreateStatistics<long, DateTimeNanos>(stats, value => new DateTimeNanos(value)),
+                    _ => null,
+                },
                 _ => null,
             };
         }

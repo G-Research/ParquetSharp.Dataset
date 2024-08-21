@@ -229,6 +229,50 @@ public class TestLogicalStatistics
         TestCreateLogicalStatistics(rowGroupValues, expectedMin, expectedMax);
     }
 
+    [TestCase(Apache.Arrow.Types.TimeUnit.Millisecond)]
+    [TestCase(Apache.Arrow.Types.TimeUnit.Microsecond)]
+    public void TestCreateDateTimeStatistics(TimeUnit unit)
+    {
+        var rowGroupValues = new[]
+        {
+            new DateTime?[] { new(2024, 8, 22, 12, 30, 0), new(2024, 8, 22, 12, 32, 0), new(2024, 8, 22, 12, 34, 0) },
+            new DateTime?[] { DateTime.MinValue, DateTime.MaxValue, },
+        };
+
+        // Note: DateTime.MaxValue gets truncated when writing to Parquet with ms or us resolution
+        var ticksPerMicrosecond = TimeSpan.TicksPerMillisecond / 1000;
+        var maxDateTimeFromParquetTicks = unit switch
+        {
+            TimeUnit.Millis => (DateTime.MaxValue.Ticks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond,
+            TimeUnit.Micros => (DateTime.MaxValue.Ticks / ticksPerMicrosecond) * ticksPerMicrosecond,
+            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, null)
+        };
+
+        var expectedMin = new DateTime[] { new(2024, 8, 22, 12, 30, 0), DateTime.MinValue };
+        var expectedMax = new DateTime[] { new(2024, 8, 22, 12, 34, 0), new(maxDateTimeFromParquetTicks) };
+
+        var logicalType = LogicalType.Timestamp(true, unit);
+
+        TestCreateLogicalStatistics(rowGroupValues, expectedMin, expectedMax, logicalType);
+    }
+
+    [Test]
+    public void TestCreateDateTimeNanosStatistics()
+    {
+        var rowGroupValues = new[]
+        {
+            new DateTime[] { new(2024, 8, 22, 12, 30, 0), new(2024, 8, 22, 12, 32, 0), new(2024, 8, 22, 12, 34, 0) },
+            new DateTime[] { DateTimeNanos.MinDateTimeValue, DateTimeNanos.MaxDateTimeValue, },
+        }.Select(dts => dts.Select(dt => new DateTimeNanos?(new DateTimeNanos(dt))).ToArray()).ToArray();
+
+        var expectedMin = new DateTimeNanos[] { new(new DateTime(2024, 8, 22, 12, 30, 0)), new(DateTimeNanos.MinDateTimeValue) };
+        var expectedMax = new DateTimeNanos[] { new(new DateTime(2024, 8, 22, 12, 34, 0)), new(DateTimeNanos.MaxDateTimeValue) };
+
+        var logicalType = LogicalType.Timestamp(true, TimeUnit.Nanos);
+
+        TestCreateLogicalStatistics(rowGroupValues, expectedMin, expectedMax, logicalType);
+    }
+
     [Test]
     public void TestCreateTimespanStatistics()
     {
@@ -249,13 +293,13 @@ public class TestLogicalStatistics
         Assert.That(statistics[0], Is.Null);
     }
 
-    private static void TestCreateLogicalStatistics<T>(T?[][] rowGroupValues, T[] expectedMin, T[] expectedMax)
+    private static void TestCreateLogicalStatistics<T>(T?[][] rowGroupValues, T[] expectedMin, T[] expectedMax, LogicalType? logicalType = null)
         where T : struct
     {
         using var tmpDir = new DisposableDirectory();
         var filePath = tmpDir.AbsPath("test.parquet");
 
-        WriteParquet(filePath, rowGroupValues);
+        WriteParquet(filePath, rowGroupValues, logicalType);
         var statistics = GetStatistics(filePath);
 
         for (var rowGroup = 0; rowGroup < rowGroupValues.Length; ++rowGroup)
@@ -291,11 +335,11 @@ public class TestLogicalStatistics
         return stats;
     }
 
-    private static void WriteParquet<T>(string path, T[][] rowGroupValues)
+    private static void WriteParquet<T>(string path, T[][] rowGroupValues, LogicalType? logicalType = null)
     {
         var columns = new Column[]
         {
-            new Column<T>("x")
+            new Column<T>("x", logicalTypeOverride: logicalType)
         };
         using var writer = new ParquetFileWriter(path, columns);
         foreach (var values in rowGroupValues)

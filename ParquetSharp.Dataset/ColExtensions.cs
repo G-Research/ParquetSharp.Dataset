@@ -66,4 +66,19 @@ public static class ColExtensions
         return new ColumnValueFilter(
             column.Name, new DateRangeEvaluator(start, end, column.Name), new DateRangeStatisticsEvaluator(start, end));
     }
+
+    /// <summary>
+    /// Filter based on a Timestamp typed column being within a specified range.
+    /// Time zones are not accounted for, the start and end times must be in the same time zone as the column data.
+    /// </summary>
+    /// <param name="column">The Timestamp column to add the condition on</param>
+    /// <param name="start">The start time of the range (inclusive)</param>
+    /// <param name="end">The end time of the range (exclusive)</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsInRange(this Col column, DateTime start, DateTime end)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new TimestampRangeEvaluator(start, end, column.Name), new TimestampRangeStatisticsEvaluator(start, end));
+    }
 }
