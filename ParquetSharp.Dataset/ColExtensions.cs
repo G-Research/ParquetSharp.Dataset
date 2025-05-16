@@ -33,6 +33,18 @@ public static class ColExtensions
     }
 
     /// <summary>
+    /// Filter based on an integer typed column being greater than a specified value
+    /// </summary>
+    /// <param name="column">The column to add the condition on</param>
+    /// <param name="value">The value to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsGreaterThan(this Col column, long value)
+    {
+        return new ColumnValueFilter(
+            column.Name, new IntComparisonEvaluator(ComparisonOperator.GreaterThan, value, column.Name), null);
+    }
+
+    /// <summary>
     /// Filter based on a string typed column being equal to a specified value
     /// </summary>
     /// <param name="column">The column to add the condition on</param>

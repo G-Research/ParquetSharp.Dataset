@@ -117,6 +117,20 @@ public class TestIntFilter
     }
 
     [Theory]
+    public void TestComputeIntGtMask(long filterValue)
+    {
+        var filter = Col.Named("x").IsGreaterThan(filterValue);
+        TestComputeIntComparisonMask<sbyte, Int8Array, Int8Array.Builder>(filter, SByteValues, val => val > filterValue);
+        TestComputeIntComparisonMask<short, Int16Array, Int16Array.Builder>(filter, ShortValues, val => val > filterValue);
+        TestComputeIntComparisonMask<int, Int32Array, Int32Array.Builder>(filter, IntValues, val => val > filterValue);
+        TestComputeIntComparisonMask<long, Int64Array, Int64Array.Builder>(filter, LongValues, val => val > filterValue);
+        TestComputeIntComparisonMask<byte, UInt8Array, UInt8Array.Builder>(filter, ByteValues, val => val > filterValue);
+        TestComputeIntComparisonMask<ushort, UInt16Array, UInt16Array.Builder>(filter, UShortValues, val => val > filterValue);
+        TestComputeIntComparisonMask<uint, UInt32Array, UInt32Array.Builder>(filter, UIntValues, val => val > filterValue);
+        TestComputeIntComparisonMask<ulong, UInt64Array, UInt64Array.Builder>(filter, ULongValues, val => filterValue < 0 || val > (ulong)filterValue);
+    }
+
+    [Theory]
     public void TestComputeIntRangeMask((long, long) filterRange)
     {
         var (rangeStart, rangeEnd) = filterRange;
@@ -191,6 +205,42 @@ public class TestIntFilter
             Assert.That(
                 isIncluded, Is.EqualTo(isEqual),
                 $"Expected {typeof(T)} value {arrayValue} inclusion to be {isEqual}");
+        }
+    }
+
+    private static void TestComputeIntComparisonMask<T, TArray, TBuilder>(IFilter filter, T[] values, Func<T, bool> comparison)
+        where T : struct, IEquatable<T>
+        where TArray : PrimitiveArray<T>
+        where TBuilder : PrimitiveArrayBuilder<T, TArray, TBuilder>, new()
+    {
+        var array = BuildArray<T, TArray, TBuilder>(values);
+        var recordBatch = new RecordBatch.Builder().Append("x", true, array).Build();
+
+        var mask = filter.ComputeMask(recordBatch);
+
+        Assert.That(mask, Is.Not.Null);
+        Assert.That(mask!.Mask.Length, Is.EqualTo(BitUtility.ByteCount(array.Length)));
+
+        for (var i = 0; i < array.Length; ++i)
+        {
+            var isIncluded = BitUtility.GetBit(mask.Mask.Span, i);
+            var arrayValue = array.GetValue(i);
+            var comparisonIsTrue = false;
+            if (arrayValue.HasValue)
+            {
+                try
+                {
+                    comparisonIsTrue = comparison(arrayValue.Value);
+                }
+                catch (OverflowException)
+                {
+                }
+            }
+
+            var valueString = arrayValue.HasValue ? arrayValue.Value.ToString() : "null";
+            Assert.That(
+                isIncluded, Is.EqualTo(comparisonIsTrue),
+                $"Expected {typeof(T)} value {valueString} inclusion to be {comparisonIsTrue}");
         }
     }
 
