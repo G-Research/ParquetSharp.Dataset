@@ -113,6 +113,76 @@ public static class ColExtensions
     }
 
     /// <summary>
+    /// Filter based on a date typed column being equal to a specified date value
+    /// </summary>
+    /// <param name="column">The date column to add the condition on</param>
+    /// <param name="value">The date to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsEqualTo(this Col column, DateOnly value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new DateComparisonEvaluator(ComparisonOperator.Equal, value, column.Name),
+            new DateComparisonStatisticsEvaluator(ComparisonOperator.Equal, value));
+    }
+
+    /// <summary>
+    /// Filter based on a date typed column being greater than a specified date value
+    /// </summary>
+    /// <param name="column">The date column to add the condition on</param>
+    /// <param name="value">The date to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsGreaterThan(this Col column, DateOnly value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new DateComparisonEvaluator(ComparisonOperator.GreaterThan, value, column.Name),
+            new DateComparisonStatisticsEvaluator(ComparisonOperator.GreaterThan, value));
+    }
+
+    /// <summary>
+    /// Filter based on a date typed column being greater than or equal to a specified date value
+    /// </summary>
+    /// <param name="column">The date column to add the condition on</param>
+    /// <param name="value">The date to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsGreaterThanOrEqual(this Col column, DateOnly value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new DateComparisonEvaluator(ComparisonOperator.GreaterThanOrEqual, value, column.Name),
+            new DateComparisonStatisticsEvaluator(ComparisonOperator.GreaterThanOrEqual, value));
+    }
+
+    /// <summary>
+    /// Filter based on a date typed column being less than a specified date value
+    /// </summary>
+    /// <param name="column">The date column to add the condition on</param>
+    /// <param name="value">The date to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsLessThan(this Col column, DateOnly value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new DateComparisonEvaluator(ComparisonOperator.LessThan, value, column.Name),
+            new DateComparisonStatisticsEvaluator(ComparisonOperator.LessThan, value));
+    }
+
+    /// <summary>
+    /// Filter based on a date typed column being less than or equal to a specified date value
+    /// </summary>
+    /// <param name="column">The date column to add the condition on</param>
+    /// <param name="value">The date to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsLessThanOrEqual(this Col column, DateOnly value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new DateComparisonEvaluator(ComparisonOperator.LessThanOrEqual, value, column.Name),
+            new DateComparisonStatisticsEvaluator(ComparisonOperator.LessThanOrEqual, value));
+    }
+
+    /// <summary>
     /// Filter based on a date typed column being within a specified date range
     /// </summary>
     /// <param name="column">The date column to add the condition on</param>
