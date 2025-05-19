@@ -16,7 +16,9 @@ public static class ColExtensions
     public static IFilter IsEqualTo(this Col column, long value)
     {
         return new ColumnValueFilter(
-            column.Name, new IntComparisonEvaluator(ComparisonOperator.Equal, value, column.Name), new IntEqualityStatisticsEvaluator(value));
+            column.Name,
+            new IntComparisonEvaluator(ComparisonOperator.Equal, value, column.Name),
+            new IntComparisonStatisticsEvaluator(ComparisonOperator.Equal, value));
     }
 
     /// <summary>
@@ -41,7 +43,9 @@ public static class ColExtensions
     public static IFilter IsGreaterThan(this Col column, long value)
     {
         return new ColumnValueFilter(
-            column.Name, new IntComparisonEvaluator(ComparisonOperator.GreaterThan, value, column.Name), null);
+            column.Name,
+            new IntComparisonEvaluator(ComparisonOperator.GreaterThan, value, column.Name),
+            new IntComparisonStatisticsEvaluator(ComparisonOperator.GreaterThan, value));
     }
 
     /// <summary>
