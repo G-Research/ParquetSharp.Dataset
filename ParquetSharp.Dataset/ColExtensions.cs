@@ -16,7 +16,7 @@ public static class ColExtensions
     public static IFilter IsEqualTo(this Col column, long value)
     {
         return new ColumnValueFilter(
-            column.Name, new IntEqualityEvaluator(value, column.Name), new IntEqualityStatisticsEvaluator(value));
+            column.Name, new IntComparisonEvaluator(ComparisonOperator.Equal, value, column.Name), new IntEqualityStatisticsEvaluator(value));
     }
 
     /// <summary>

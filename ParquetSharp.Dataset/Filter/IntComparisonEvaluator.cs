@@ -4,7 +4,7 @@ using Apache.Arrow;
 namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
-/// Compares array values using a comparison operator
+/// Compares array values to a constant using a binary comparison operator
 /// </summary>
 internal sealed class IntComparisonEvaluator :
     BaseFilterEvaluator
@@ -87,13 +87,13 @@ internal sealed class IntComparisonEvaluator :
         {
             if (_value < 0)
             {
-                if (_operator == ComparisonOperator.LessThan || _operator == ComparisonOperator.LessThanOrEqual)
+                if (_operator == ComparisonOperator.GreaterThan || _operator == ComparisonOperator.GreaterThanOrEqual)
                 {
-                    mask.AsSpan().Fill(0);
+                    FillNonNulls(mask, inputArray);
                 }
                 else
                 {
-                    FillNonNulls(mask, inputArray);
+                    mask.AsSpan().Fill(0);
                 }
             }
             else
@@ -169,6 +169,8 @@ internal sealed class IntComparisonEvaluator :
     {
         switch (_operator)
         {
+            case ComparisonOperator.Equal:
+                return _value < minValue || _value > maxValue;
             case ComparisonOperator.GreaterThan:
                 return maxValue <= _value;
             case ComparisonOperator.GreaterThanOrEqual:
@@ -186,6 +188,8 @@ internal sealed class IntComparisonEvaluator :
     {
         switch (_operator)
         {
+            case ComparisonOperator.Equal:
+                return false;
             case ComparisonOperator.GreaterThan:
                 return minValue > _value;
             case ComparisonOperator.GreaterThanOrEqual:
@@ -208,12 +212,20 @@ internal sealed class IntComparisonEvaluator :
             var values = array.Values;
             switch (op)
             {
+                case ComparisonOperator.Equal:
+                {
+                    for (var i = 0; i < array.Length; ++i)
+                    {
+                        BitUtility.SetBit(mask, i, values[i].Equals(comparisonValue));
+                    }
+
+                    break;
+                }
                 case ComparisonOperator.GreaterThan:
                 {
                     for (var i = 0; i < array.Length; ++i)
                     {
-                        var value = values[i];
-                        BitUtility.SetBit(mask, i, value.CompareTo(comparisonValue) > 0);
+                        BitUtility.SetBit(mask, i, values[i].CompareTo(comparisonValue) > 0);
                     }
 
                     break;
@@ -222,8 +234,7 @@ internal sealed class IntComparisonEvaluator :
                 {
                     for (var i = 0; i < array.Length; ++i)
                     {
-                        var value = values[i];
-                        BitUtility.SetBit(mask, i, value.CompareTo(comparisonValue) >= 0);
+                        BitUtility.SetBit(mask, i, values[i].CompareTo(comparisonValue) >= 0);
                     }
 
                     break;
@@ -232,8 +243,7 @@ internal sealed class IntComparisonEvaluator :
                 {
                     for (var i = 0; i < array.Length; ++i)
                     {
-                        var value = values[i];
-                        BitUtility.SetBit(mask, i, value.CompareTo(comparisonValue) < 0);
+                        BitUtility.SetBit(mask, i, values[i].CompareTo(comparisonValue) < 0);
                     }
 
                     break;
@@ -242,8 +252,7 @@ internal sealed class IntComparisonEvaluator :
                 {
                     for (var i = 0; i < array.Length; ++i)
                     {
-                        var value = values[i];
-                        BitUtility.SetBit(mask, i, value.CompareTo(comparisonValue) <= 0);
+                        BitUtility.SetBit(mask, i, values[i].CompareTo(comparisonValue) <= 0);
                     }
 
                     break;
@@ -258,6 +267,15 @@ internal sealed class IntComparisonEvaluator :
         {
             switch (op)
             {
+                case ComparisonOperator.Equal:
+                {
+                    for (var i = 0; i < array.Length; ++i)
+                    {
+                        BitUtility.SetBit(mask, i, array.GetValue(i).Equals(comparisonValue));
+                    }
+
+                    break;
+                }
                 case ComparisonOperator.GreaterThan:
                 {
                     for (var i = 0; i < array.Length; ++i)

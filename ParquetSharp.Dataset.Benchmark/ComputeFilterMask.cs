@@ -56,7 +56,7 @@ public class ComputeFilterMask
     [Benchmark]
     public byte[] ComputeIntEqualityMask()
     {
-        var evaluator = new IntEqualityEvaluator(10, "x");
+        var evaluator = new IntComparisonEvaluator(ComparisonOperator.Equal, 10, "x");
         _intArray!.Accept(evaluator);
         return evaluator.FilterResult;
     }
@@ -64,7 +64,7 @@ public class ComputeFilterMask
     [Benchmark]
     public byte[] ComputeIntEqualityMaskWithNullableArray()
     {
-        var evaluator = new IntEqualityEvaluator(10, "x");
+        var evaluator = new IntComparisonEvaluator(ComparisonOperator.Equal, 10, "x");
         _nullableIntArray!.Accept(evaluator);
         return evaluator.FilterResult;
     }
