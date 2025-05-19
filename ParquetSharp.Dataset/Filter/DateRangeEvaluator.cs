@@ -22,8 +22,8 @@ internal sealed class DateRangeEvaluator :
     {
         BuildMask(array, (mask, inputArray) =>
         {
-            var startNumber = _start.DayNumber - ArrowEpoch.DayNumber;
-            var endNumber = _end.DayNumber - ArrowEpoch.DayNumber;
+            var startNumber = TimeUtils.DateToDayNumber(_start);
+            var endNumber = TimeUtils.DateToDayNumber(_end);
             if (inputArray.NullCount == 0)
             {
                 var values = inputArray.Values;
@@ -66,8 +66,6 @@ internal sealed class DateRangeEvaluator :
         throw new NotSupportedException(
             $"Date range filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
     }
-
-    private static readonly DateOnly ArrowEpoch = new DateOnly(1970, 1, 1);
 
     private readonly DateOnly _start;
     private readonly DateOnly _end;

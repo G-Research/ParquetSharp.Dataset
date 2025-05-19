@@ -12,11 +12,8 @@ using TimeUnit = Apache.Arrow.Types.TimeUnit;
 [TestFixture]
 public class TestTimestampFilter
 {
-    [TestCase(TimeUnit.Second)]
-    [TestCase(TimeUnit.Millisecond)]
-    [TestCase(TimeUnit.Microsecond)]
-    [TestCase(TimeUnit.Nanosecond)]
-    public void TestComputeMask(TimeUnit unit)
+    [Test]
+    public void TestComputeRangeMask([Values] TimeUnit unit)
     {
         var rangeStart = new DateTime(2024, 8, 21, 14, 12, 0);
         var rangeEnd = new DateTime(2024, 8, 21, 14, 17, 0);
@@ -46,11 +43,82 @@ public class TestTimestampFilter
     }
 
     [Test]
+    public void TestComputeEqMask([Values] TimeUnit unit)
+    {
+        var value = new DateTime(2025, 5, 19, 12, 34, 0);
+        var filter = Col.Named("timestamp").IsEqualTo(value);
+        TestComputeComparisonMask(unit, filter, dt => dt == value);
+    }
+
+    [Test]
+    public void TestComputeGtMask([Values] TimeUnit unit)
+    {
+        var value = new DateTime(2025, 5, 19, 12, 34, 0);
+        var filter = Col.Named("timestamp").IsGreaterThan(value);
+        TestComputeComparisonMask(unit, filter, dt => dt > value);
+    }
+
+    [Test]
+    public void TestComputeGtEqMask([Values] TimeUnit unit)
+    {
+        var value = new DateTime(2025, 5, 19, 12, 34, 0);
+        var filter = Col.Named("timestamp").IsGreaterThanOrEqual(value);
+        TestComputeComparisonMask(unit, filter, dt => dt >= value);
+    }
+
+    [Test]
+    public void TestComputeLtMask([Values] TimeUnit unit)
+    {
+        var value = new DateTime(2025, 5, 19, 12, 34, 0);
+        var filter = Col.Named("timestamp").IsLessThan(value);
+        TestComputeComparisonMask(unit, filter, dt => dt < value);
+    }
+
+    [Test]
+    public void TestComputeLtEqMask([Values] TimeUnit unit)
+    {
+        var value = new DateTime(2025, 5, 19, 12, 34, 0);
+        var filter = Col.Named("timestamp").IsLessThanOrEqual(value);
+        TestComputeComparisonMask(unit, filter, dt => dt <= value);
+    }
+
+    private static void TestComputeComparisonMask(TimeUnit unit, IFilter filter, Func<DateTime, bool> predicate)
+    {
+        var timeValues = Enumerable.Range(0, 100)
+            .Select(i => new DateTimeOffset(2025, 5, 19, 12, 0, 0, TimeSpan.Zero).AddMinutes(i))
+            .ToArray();
+        var timestampArray = new TimestampArray.Builder(unit)
+            .AppendNull()
+            .AppendRange(timeValues)
+            .Build();
+
+        var recordBatch = new RecordBatch.Builder()
+            .Append("timestamp", true, timestampArray)
+            .Build();
+
+        var mask = filter.ComputeMask(recordBatch);
+
+        var expectedMask = new List<bool>();
+        expectedMask.Add(false); // For first null
+        foreach (var value in timeValues)
+        {
+            expectedMask.Add(predicate(value.DateTime));
+        }
+
+        Assert.That(mask, Is.Not.Null);
+        Assert.That(mask!.IncludedCount, Is.GreaterThan(0));
+        Assert.That(mask.IncludedCount, Is.LessThan(timeValues.Length));
+        for (var i = 0; i < expectedMask.Count; ++i)
+        {
+            Assert.That(BitUtility.GetBit(mask.Mask.Span, i), Is.EqualTo(expectedMask[i]));
+        }
+    }
+
+    [Test]
     public void TestComputeMaskWithInvalidColumnType()
     {
         var rangeStart = new DateTime(2024, 8, 21, 14, 12, 0);
         var rangeEnd = new DateTime(2024, 8, 21, 14, 17, 0);
-        var filter = Col.Named("timestamp").IsInRange(rangeStart, rangeEnd);
 
         var timestampArray = new Int32Array.Builder()
             .AppendRange(Enumerable.Range(0, 100))
@@ -59,13 +127,19 @@ public class TestTimestampFilter
             .Append("timestamp", true, timestampArray)
             .Build();
 
+        var filter = Col.Named("timestamp").IsInRange(rangeStart, rangeEnd);
         var exception = Assert.Throws<NotSupportedException>(() => filter.ComputeMask(recordBatch));
         Assert.That(exception!.Message, Is.EqualTo(
             "Timestamp range filter for column 'timestamp' does not support arrays with type int32"));
+
+        filter = Col.Named("timestamp").IsEqualTo(rangeStart);
+        exception = Assert.Throws<NotSupportedException>(() => filter.ComputeMask(recordBatch));
+        Assert.That(exception!.Message, Is.EqualTo(
+            "Timestamp comparison filter for column 'timestamp' does not support arrays with type int32"));
     }
 
     [Test]
-    public void TestIncludeRowGroup([Values] bool nanoseconds)
+    public void TestTimestampRangeIncludeRowGroup([Values] bool nanoseconds)
     {
         var rangeStart = new DateTime(2024, 8, 21, 14, 12, 0);
         var rangeEnd = new DateTime(2024, 8, 21, 14, 17, 0);
@@ -95,6 +169,66 @@ public class TestTimestampFilter
             var includeRowGroup = filter.IncludeRowGroup(statistics);
 
             Assert.That(includeRowGroup, Is.EqualTo(expectInclude));
+        }
+    }
+
+    [Test]
+    public void TestTimestampComparisonIncludeRowGroup([Values] bool nanoseconds)
+    {
+        var statisticsRanges = new[]
+        {
+            (new DateTime(2025, 1, 1, 9, 0, 0), new DateTime(2025, 1, 31, 17, 0, 0)),
+            (new DateTime(2025, 2, 1, 9, 0, 0), new DateTime(2025, 2, 28, 17, 0, 0)),
+            (new DateTime(2025, 3, 1, 9, 0, 0), new DateTime(2025, 3, 31, 17, 0, 0)),
+        };
+
+        Dictionary<string, LogicalStatistics>[] statistics;
+        if (nanoseconds)
+        {
+            statistics = statisticsRanges.Select(minMax => new Dictionary<string, LogicalStatistics>
+            {
+                {
+                    "timestamp", new LogicalStatistics<DateTimeNanos>(
+                        new DateTimeNanos(minMax.Item1), new DateTimeNanos(minMax.Item2))
+                }
+            }).ToArray();
+        }
+        else
+        {
+            statistics = statisticsRanges.Select(minMax => new Dictionary<string, LogicalStatistics>
+            {
+                { "timestamp", new LogicalStatistics<DateTime>(minMax.Item1, minMax.Item2) }
+            }).ToArray();
+        }
+
+        {
+            var filter = Col.Named("timestamp").IsEqualTo(new DateTime(2025, 2, 2, 12, 0, 0));
+            var includedGroups = statistics.Select(s => filter.IncludeRowGroup(s)).ToArray();
+            Assert.That(includedGroups, Is.EqualTo(new[] { false, true, false }));
+        }
+
+        {
+            var filter = Col.Named("timestamp").IsGreaterThan(new DateTime(2025, 1, 31, 17, 0, 0));
+            var includedGroups = statistics.Select(s => filter.IncludeRowGroup(s)).ToArray();
+            Assert.That(includedGroups, Is.EqualTo(new[] { false, true, true }));
+        }
+
+        {
+            var filter = Col.Named("timestamp").IsGreaterThanOrEqual(new DateTime(2025, 2, 28, 17, 0, 0));
+            var includedGroups = statistics.Select(s => filter.IncludeRowGroup(s)).ToArray();
+            Assert.That(includedGroups, Is.EqualTo(new[] { false, true, true }));
+        }
+
+        {
+            var filter = Col.Named("timestamp").IsLessThan(new DateTime(2025, 3, 1, 9, 0, 0));
+            var includedGroups = statistics.Select(s => filter.IncludeRowGroup(s)).ToArray();
+            Assert.That(includedGroups, Is.EqualTo(new[] { true, true, false }));
+        }
+
+        {
+            var filter = Col.Named("timestamp").IsLessThanOrEqual(new DateTime(2025, 2, 1, 9, 0, 0));
+            var includedGroups = statistics.Select(s => filter.IncludeRowGroup(s)).ToArray();
+            Assert.That(includedGroups, Is.EqualTo(new[] { true, true, false }));
         }
     }
 }

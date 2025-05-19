@@ -1,28 +1,36 @@
 using System;
 using Apache.Arrow;
+using Apache.Arrow.Types;
 
 namespace ParquetSharp.Dataset.Filter;
 
 /// <summary>
-/// Compare Date array values using a binary comparison operator
+/// Compare Timestamp array values using a binary comparison operator
 /// </summary>
-internal sealed class DateComparisonEvaluator :
+internal sealed class TimestampComparisonEvaluator :
     BaseFilterEvaluator
-    , IArrowArrayVisitor<Date32Array>
-    , IArrowArrayVisitor<Date64Array>
+    , IArrowArrayVisitor<TimestampArray>
 {
-    public DateComparisonEvaluator(ComparisonOperator op, DateOnly value, string columnName)
+    public TimestampComparisonEvaluator(ComparisonOperator op, DateTime value, string columnName)
     {
         _operator = op;
         _value = value;
         _columnName = columnName;
     }
 
-    public void Visit(Date32Array array)
+    public void Visit(TimestampArray array)
     {
-        var comparisonValue = TimeUtils.DateToDayNumber(_value);
+        var dataType = array.Data.DataType;
+        var timestampType = dataType as TimestampType;
+        if (timestampType == null)
+        {
+            throw new Exception(
+                $"Expected a TimestampArray to have a TimestampType DataType, got {dataType?.GetType().FullName}");
+        }
+
         BuildMask(array, (mask, inputArray) =>
         {
+            var comparisonValue = TimeUtils.ToPrimitiveValue(_value, timestampType.Unit);
             if (inputArray.NullCount == 0)
             {
                 var values = inputArray.Values;
@@ -133,72 +141,13 @@ internal sealed class DateComparisonEvaluator :
         });
     }
 
-    public void Visit(Date64Array array)
-    {
-        // A Date64Array holds the number of milliseconds since the UNIX epoch,
-        // so the conversion from a long value to a date isn't as simple as for Date32
-        BuildMask(array, (mask, inputArray) =>
-        {
-            switch (_operator)
-            {
-                case ComparisonOperator.Equal:
-                {
-                    for (var i = 0; i < inputArray.Length; ++i)
-                    {
-                        BitUtility.SetBit(mask, i, inputArray.GetDateOnly(i) == _value);
-                    }
-
-                    break;
-                }
-                case ComparisonOperator.GreaterThan:
-                {
-                    for (var i = 0; i < inputArray.Length; ++i)
-                    {
-                        BitUtility.SetBit(mask, i, inputArray.GetDateOnly(i) > _value);
-                    }
-
-                    break;
-                }
-                case ComparisonOperator.GreaterThanOrEqual:
-                {
-                    for (var i = 0; i < inputArray.Length; ++i)
-                    {
-                        BitUtility.SetBit(mask, i, inputArray.GetDateOnly(i) >= _value);
-                    }
-
-                    break;
-                }
-                case ComparisonOperator.LessThan:
-                {
-                    for (var i = 0; i < inputArray.Length; ++i)
-                    {
-                        BitUtility.SetBit(mask, i, inputArray.GetDateOnly(i) < _value);
-                    }
-
-                    break;
-                }
-                case ComparisonOperator.LessThanOrEqual:
-                {
-                    for (var i = 0; i < inputArray.Length; ++i)
-                    {
-                        BitUtility.SetBit(mask, i, inputArray.GetDateOnly(i) <= _value);
-                    }
-
-                    break;
-                }
-                default:
-                    throw new Exception($"Unexpected comparison operator {_operator}");
-            }
-        });
-    }
-
     public override void Visit(IArrowArray array)
     {
         throw new NotSupportedException(
-            $"Date comparison filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
+            $"Timestamp comparison filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
     }
 
     private readonly ComparisonOperator _operator;
-    private readonly DateOnly _value;
+    private readonly DateTime _value;
     private readonly string _columnName;
 }

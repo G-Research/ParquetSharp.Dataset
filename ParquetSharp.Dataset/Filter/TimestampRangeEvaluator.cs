@@ -30,8 +30,8 @@ internal sealed class TimestampRangeEvaluator :
 
         BuildMask(array, (mask, inputArray) =>
         {
-            var startValue = ToPrimitiveValue(_start, timestampType.Unit);
-            var endValue = ToPrimitiveValue(_end, timestampType.Unit);
+            var startValue = TimeUtils.ToPrimitiveValue(_start, timestampType.Unit);
+            var endValue = TimeUtils.ToPrimitiveValue(_end, timestampType.Unit);
             if (inputArray.NullCount == 0)
             {
                 var values = inputArray.Values;
@@ -59,22 +59,6 @@ internal sealed class TimestampRangeEvaluator :
         throw new NotSupportedException(
             $"Timestamp range filter for column '{_columnName}' does not support arrays with type {array.Data.DataType.Name}");
     }
-
-    private static long ToPrimitiveValue(DateTime dateTime, Apache.Arrow.Types.TimeUnit unit)
-    {
-        var ticks = (dateTime - ArrowEpoch).Ticks;
-
-        return unit switch
-        {
-            Apache.Arrow.Types.TimeUnit.Second => ticks / TimeSpan.TicksPerSecond,
-            Apache.Arrow.Types.TimeUnit.Millisecond => ticks / TimeSpan.TicksPerMillisecond,
-            Apache.Arrow.Types.TimeUnit.Microsecond => ticks / (TimeSpan.TicksPerMillisecond / 1000),
-            Apache.Arrow.Types.TimeUnit.Nanosecond => checked(ticks * 100),
-            _ => throw new ArgumentOutOfRangeException(nameof(unit), unit, "Invalid timestamp unit")
-        };
-    }
-
-    private static readonly DateTime ArrowEpoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
 
     private readonly DateTime _start;
     private readonly DateTime _end;

@@ -196,6 +196,81 @@ public static class ColExtensions
     }
 
     /// <summary>
+    /// Filter based on a timestamp typed column being equal to a specified value
+    /// Time zones are not accounted for, the value must be in the same time zone as the column data.
+    /// </summary>
+    /// <param name="column">The timestamp column to add the condition on</param>
+    /// <param name="value">The timestamp to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsEqualTo(this Col column, DateTime value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new TimestampComparisonEvaluator(ComparisonOperator.Equal, value, column.Name),
+            new TimestampComparisonStatisticsEvaluator(ComparisonOperator.Equal, value));
+    }
+
+    /// <summary>
+    /// Filter based on a timestamp typed column being greater than a specified value
+    /// Time zones are not accounted for, the value must be in the same time zone as the column data.
+    /// </summary>
+    /// <param name="column">The timestamp column to add the condition on</param>
+    /// <param name="value">The timestamp to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsGreaterThan(this Col column, DateTime value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new TimestampComparisonEvaluator(ComparisonOperator.GreaterThan, value, column.Name),
+            new TimestampComparisonStatisticsEvaluator(ComparisonOperator.GreaterThan, value));
+    }
+
+    /// <summary>
+    /// Filter based on a timestamp typed column being greater than or equal to a specified timestamp value
+    /// Time zones are not accounted for, the value must be in the same time zone as the column data.
+    /// </summary>
+    /// <param name="column">The timestamp column to add the condition on</param>
+    /// <param name="value">The timestamp to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsGreaterThanOrEqual(this Col column, DateTime value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new TimestampComparisonEvaluator(ComparisonOperator.GreaterThanOrEqual, value, column.Name),
+            new TimestampComparisonStatisticsEvaluator(ComparisonOperator.GreaterThanOrEqual, value));
+    }
+
+    /// <summary>
+    /// Filter based on a timestamp typed column being less than a specified timestamp value
+    /// Time zones are not accounted for, the value must be in the same time zone as the column data.
+    /// </summary>
+    /// <param name="column">The timestamp column to add the condition on</param>
+    /// <param name="value">The timestamp to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsLessThan(this Col column, DateTime value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new TimestampComparisonEvaluator(ComparisonOperator.LessThan, value, column.Name),
+            new TimestampComparisonStatisticsEvaluator(ComparisonOperator.LessThan, value));
+    }
+
+    /// <summary>
+    /// Filter based on a timestamp typed column being less than or equal to a specified value
+    /// Time zones are not accounted for, the value must be in the same time zone as the column data.
+    /// </summary>
+    /// <param name="column">The timestamp column to add the condition on</param>
+    /// <param name="value">The timestamp to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsLessThanOrEqual(this Col column, DateTime value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new TimestampComparisonEvaluator(ComparisonOperator.LessThanOrEqual, value, column.Name),
+            new TimestampComparisonStatisticsEvaluator(ComparisonOperator.LessThanOrEqual, value));
+    }
+
+    /// <summary>
     /// Filter based on a Timestamp typed column being within a specified range.
     /// Time zones are not accounted for, the start and end times must be in the same time zone as the column data.
     /// </summary>
