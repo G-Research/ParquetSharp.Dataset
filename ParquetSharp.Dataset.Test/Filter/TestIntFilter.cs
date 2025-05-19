@@ -271,6 +271,55 @@ public class TestIntFilter
         TestIntRangeIncludeRowGroup(rangeStart, rangeEnd, ULongValues, val => checked((long)val));
     }
 
+    [Test]
+    public void TestImpossibleFilter()
+    {
+        var builder = new Int32Array.Builder();
+        builder.AppendRange(new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+        var array = builder.Build();
+        var recordBatch = new RecordBatch.Builder().Append("x", true, array).Build();
+
+        var filter = Col.Named("x").IsGreaterThan((long)Int32.MaxValue + 1);
+        var mask = filter.ComputeMask(recordBatch);
+
+        Assert.That(mask, Is.Not.Null);
+        Assert.That(mask.Mask.Length, Is.EqualTo(2));
+        Assert.That(mask.IncludedCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void TestRedundantFilterWithNulls()
+    {
+        var builder = new Int32Array.Builder();
+        builder.AppendNull();
+        builder.AppendRange(new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+        var array = builder.Build();
+        var recordBatch = new RecordBatch.Builder().Append("x", true, array).Build();
+
+        var filter = Col.Named("x").IsGreaterThan((long)Int32.MinValue - 1);
+        var mask = filter.ComputeMask(recordBatch);
+
+        Assert.That(mask, Is.Not.Null);
+        Assert.That(mask.Mask.Length, Is.EqualTo(2));
+        Assert.That(mask.IncludedCount, Is.EqualTo(10));
+    }
+
+    [Test]
+    public void TestRedundantFilterWithoutNulls()
+    {
+        var builder = new Int32Array.Builder();
+        builder.AppendRange(new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+        var array = builder.Build();
+        var recordBatch = new RecordBatch.Builder().Append("x", false, array).Build();
+
+        var filter = Col.Named("x").IsGreaterThan((long)Int32.MinValue - 1);
+        var mask = filter.ComputeMask(recordBatch);
+
+        Assert.That(mask, Is.Not.Null);
+        Assert.That(mask.Mask.Length, Is.EqualTo(2));
+        Assert.That(mask.IncludedCount, Is.EqualTo(10));
+    }
+
     private static void TestComputeIntComparisonMask<T, TArray, TBuilder>(IFilter filter, T[] values, Func<T, bool> comparison)
         where T : struct, IEquatable<T>
         where TArray : PrimitiveArray<T>

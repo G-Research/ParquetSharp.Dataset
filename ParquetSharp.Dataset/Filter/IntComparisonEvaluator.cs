@@ -329,7 +329,10 @@ internal sealed class IntComparisonEvaluator :
     {
         if (array.NullCount == 0)
         {
-            mask.AsSpan().Fill(1);
+            for (var i = 0; i < array.Length; ++i)
+            {
+                BitUtility.SetBit(mask, i, true);
+            }
         }
         else
         {
