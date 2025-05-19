@@ -22,19 +22,6 @@ public static class ColExtensions
     }
 
     /// <summary>
-    /// Filter based on an integer typed column being within a specified range
-    /// </summary>
-    /// <param name="column">The column to add the condition on</param>
-    /// <param name="start">The start value of the range (inclusive)</param>
-    /// <param name="end">The end value of the range (exclusive)</param>
-    /// <returns>Created filter</returns>
-    public static IFilter IsInRange(this Col column, long start, long end)
-    {
-        return new ColumnValueFilter(
-            column.Name, new IntRangeEvaluator(start, end, column.Name), new IntRangeStatisticsEvaluator(start, end));
-    }
-
-    /// <summary>
     /// Filter based on an integer typed column being greater than a specified value
     /// </summary>
     /// <param name="column">The column to add the condition on</param>
@@ -46,6 +33,61 @@ public static class ColExtensions
             column.Name,
             new IntComparisonEvaluator(ComparisonOperator.GreaterThan, value, column.Name),
             new IntComparisonStatisticsEvaluator(ComparisonOperator.GreaterThan, value));
+    }
+
+    /// <summary>
+    /// Filter based on an integer typed column being greater than or equal to a specified value
+    /// </summary>
+    /// <param name="column">The column to add the condition on</param>
+    /// <param name="value">The value to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsGreaterThanOrEqual(this Col column, long value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new IntComparisonEvaluator(ComparisonOperator.GreaterThanOrEqual, value, column.Name),
+            new IntComparisonStatisticsEvaluator(ComparisonOperator.GreaterThanOrEqual, value));
+    }
+
+    /// <summary>
+    /// Filter based on an integer typed column being less than a specified value
+    /// </summary>
+    /// <param name="column">The column to add the condition on</param>
+    /// <param name="value">The value to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsLessThan(this Col column, long value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new IntComparisonEvaluator(ComparisonOperator.LessThan, value, column.Name),
+            new IntComparisonStatisticsEvaluator(ComparisonOperator.LessThan, value));
+    }
+
+    /// <summary>
+    /// Filter based on an integer typed column being less than or equal to a specified value
+    /// </summary>
+    /// <param name="column">The column to add the condition on</param>
+    /// <param name="value">The value to compare to</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsLessThanOrEqual(this Col column, long value)
+    {
+        return new ColumnValueFilter(
+            column.Name,
+            new IntComparisonEvaluator(ComparisonOperator.LessThanOrEqual, value, column.Name),
+            new IntComparisonStatisticsEvaluator(ComparisonOperator.LessThanOrEqual, value));
+    }
+
+    /// <summary>
+    /// Filter based on an integer typed column being within a specified range
+    /// </summary>
+    /// <param name="column">The column to add the condition on</param>
+    /// <param name="start">The start value of the range (inclusive)</param>
+    /// <param name="end">The end value of the range (exclusive)</param>
+    /// <returns>Created filter</returns>
+    public static IFilter IsInRange(this Col column, long start, long end)
+    {
+        return new ColumnValueFilter(
+            column.Name, new IntRangeEvaluator(start, end, column.Name), new IntRangeStatisticsEvaluator(start, end));
     }
 
     /// <summary>

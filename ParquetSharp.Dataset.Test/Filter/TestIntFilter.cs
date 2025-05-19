@@ -132,6 +132,48 @@ public class TestIntFilter
     }
 
     [Theory]
+    public void TestComputeIntGtEqMask(long filterValue)
+    {
+        var filter = Col.Named("x").IsGreaterThanOrEqual(filterValue);
+        TestComputeIntComparisonMask<sbyte, Int8Array, Int8Array.Builder>(filter, SByteValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<short, Int16Array, Int16Array.Builder>(filter, ShortValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<int, Int32Array, Int32Array.Builder>(filter, IntValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<long, Int64Array, Int64Array.Builder>(filter, LongValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<byte, UInt8Array, UInt8Array.Builder>(filter, ByteValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<ushort, UInt16Array, UInt16Array.Builder>(filter, UShortValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<uint, UInt32Array, UInt32Array.Builder>(filter, UIntValues, val => val >= filterValue);
+        TestComputeIntComparisonMask<ulong, UInt64Array, UInt64Array.Builder>(filter, ULongValues, val => filterValue < 0 || val >= (ulong)filterValue);
+    }
+
+    [Theory]
+    public void TestComputeIntLtMask(long filterValue)
+    {
+        var filter = Col.Named("x").IsLessThan(filterValue);
+        TestComputeIntComparisonMask<sbyte, Int8Array, Int8Array.Builder>(filter, SByteValues, val => val < filterValue);
+        TestComputeIntComparisonMask<short, Int16Array, Int16Array.Builder>(filter, ShortValues, val => val < filterValue);
+        TestComputeIntComparisonMask<int, Int32Array, Int32Array.Builder>(filter, IntValues, val => val < filterValue);
+        TestComputeIntComparisonMask<long, Int64Array, Int64Array.Builder>(filter, LongValues, val => val < filterValue);
+        TestComputeIntComparisonMask<byte, UInt8Array, UInt8Array.Builder>(filter, ByteValues, val => val < filterValue);
+        TestComputeIntComparisonMask<ushort, UInt16Array, UInt16Array.Builder>(filter, UShortValues, val => val < filterValue);
+        TestComputeIntComparisonMask<uint, UInt32Array, UInt32Array.Builder>(filter, UIntValues, val => val < filterValue);
+        TestComputeIntComparisonMask<ulong, UInt64Array, UInt64Array.Builder>(filter, ULongValues, val => filterValue >= 0 && val < (ulong)filterValue);
+    }
+
+    [Theory]
+    public void TestComputeIntLtEqMask(long filterValue)
+    {
+        var filter = Col.Named("x").IsLessThanOrEqual(filterValue);
+        TestComputeIntComparisonMask<sbyte, Int8Array, Int8Array.Builder>(filter, SByteValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<short, Int16Array, Int16Array.Builder>(filter, ShortValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<int, Int32Array, Int32Array.Builder>(filter, IntValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<long, Int64Array, Int64Array.Builder>(filter, LongValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<byte, UInt8Array, UInt8Array.Builder>(filter, ByteValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<ushort, UInt16Array, UInt16Array.Builder>(filter, UShortValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<uint, UInt32Array, UInt32Array.Builder>(filter, UIntValues, val => val <= filterValue);
+        TestComputeIntComparisonMask<ulong, UInt64Array, UInt64Array.Builder>(filter, ULongValues, val => filterValue >= 0 && val <= (ulong)filterValue);
+    }
+
+    [Theory]
     public void TestComputeIntRangeMask((long, long) filterRange)
     {
         var (rangeStart, rangeEnd) = filterRange;
@@ -171,6 +213,48 @@ public class TestIntFilter
         TestIntComparisonIncludeRowGroup(filter, UShortValues, (_, max) => filterValue < max);
         TestIntComparisonIncludeRowGroup(filter, UIntValues, (_, max) => filterValue < max);
         TestIntComparisonIncludeRowGroup(filter, ULongValues, (_, max) => filterValue < 0 || (ulong)filterValue < max);
+    }
+
+    [Theory]
+    public void TestIntGtEqIncludeRowGroup(long filterValue)
+    {
+        var filter = Col.Named("x").IsGreaterThanOrEqual(filterValue);
+        TestIntComparisonIncludeRowGroup(filter, SByteValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, ShortValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, IntValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, LongValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, ByteValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, UShortValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, UIntValues, (_, max) => filterValue <= max);
+        TestIntComparisonIncludeRowGroup(filter, ULongValues, (_, max) => filterValue < 0 || (ulong)filterValue <= max);
+    }
+
+    [Theory]
+    public void TestIntLtIncludeRowGroup(long filterValue)
+    {
+        var filter = Col.Named("x").IsLessThan(filterValue);
+        TestIntComparisonIncludeRowGroup(filter, SByteValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, ShortValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, IntValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, LongValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, ByteValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, UShortValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, UIntValues, (min, _) => filterValue > min);
+        TestIntComparisonIncludeRowGroup(filter, ULongValues, (min, _) => filterValue >= 0 && (ulong)filterValue > min);
+    }
+
+    [Theory]
+    public void TestIntLtEqIncludeRowGroup(long filterValue)
+    {
+        var filter = Col.Named("x").IsLessThanOrEqual(filterValue);
+        TestIntComparisonIncludeRowGroup(filter, SByteValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, ShortValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, IntValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, LongValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, ByteValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, UShortValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, UIntValues, (min, _) => filterValue >= min);
+        TestIntComparisonIncludeRowGroup(filter, ULongValues, (min, _) => filterValue >= 0 && (ulong)filterValue >= min);
     }
 
     [Theory]
