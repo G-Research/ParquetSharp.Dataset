@@ -40,7 +40,7 @@ internal sealed class RowGroupSelector
             using var rowGroup = parquetReader.RowGroup(rowGroupIdx);
             foreach (var (columnName, columnIndex) in columnIndices)
             {
-                var metadata = rowGroup.MetaData.GetColumnChunkMetaData(columnIndex);
+                using var metadata = rowGroup.MetaData.GetColumnChunkMetaData(columnIndex);
                 using var statistics = metadata.Statistics;
                 var logicalStatistics = LogicalStatistics.FromStatistics(
                     statistics, schemaDescriptor.Column(columnIndex));
