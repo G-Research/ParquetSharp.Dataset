@@ -44,61 +44,75 @@ public class TestDateFilter<TArray, TUnderlying, TBuilder>
     }
 
     [Test]
-    public void TestDateEqComputeMask()
+    public void TestDateEqComputeMask([Values] bool includeNull)
     {
         TestDateComparisonComputeMask(
             Col.Named("date").IsEqualTo(new DateOnly(2024, 2, 1)),
-            date => date == new DateOnly(2024, 2, 1));
+            date => date == new DateOnly(2024, 2, 1),
+            includeNull);
     }
 
     [Test]
-    public void TestDateGtComputeMask()
+    public void TestDateGtComputeMask([Values] bool includeNull)
     {
         TestDateComparisonComputeMask(
             Col.Named("date").IsGreaterThan(new DateOnly(2024, 2, 1)),
-            date => date > new DateOnly(2024, 2, 1));
+            date => date > new DateOnly(2024, 2, 1),
+            includeNull);
     }
 
     [Test]
-    public void TestDateGtEqComputeMask()
+    public void TestDateGtEqComputeMask([Values] bool includeNull)
     {
         TestDateComparisonComputeMask(
             Col.Named("date").IsGreaterThanOrEqual(new DateOnly(2024, 2, 1)),
-            date => date >= new DateOnly(2024, 2, 1));
+            date => date >= new DateOnly(2024, 2, 1),
+            includeNull);
     }
 
     [Test]
-    public void TestDateLtComputeMask()
+    public void TestDateLtComputeMask([Values] bool includeNull)
     {
         TestDateComparisonComputeMask(
             Col.Named("date").IsLessThan(new DateOnly(2024, 2, 1)),
-            date => date < new DateOnly(2024, 2, 1));
+            date => date < new DateOnly(2024, 2, 1),
+            includeNull);
     }
 
     [Test]
-    public void TestDateLtEqComputeMask()
+    public void TestDateLtEqComputeMask([Values] bool includeNull)
     {
         TestDateComparisonComputeMask(
             Col.Named("date").IsLessThanOrEqual(new DateOnly(2024, 2, 1)),
-            date => date <= new DateOnly(2024, 2, 1));
+            date => date <= new DateOnly(2024, 2, 1),
+            includeNull);
     }
 
-    private static void TestDateComparisonComputeMask(IFilter filter, Func<DateOnly, bool> expectIncluded)
+    private static void TestDateComparisonComputeMask(IFilter filter, Func<DateOnly, bool> expectIncluded, bool includeNull)
     {
         var dateValues = Enumerable.Range(0, 100)
             .Select(i => new DateOnly(2024, 1, 1).AddDays(i))
             .ToArray();
-        var dateArray = new TBuilder()
-            .AppendNull()
+        var dateArrayBuilder = new TBuilder();
+        if (includeNull)
+        {
+            dateArrayBuilder.AppendNull();
+        }
+
+        var dateArray = dateArrayBuilder
             .AppendRange(dateValues)
             .Build();
 
         var recordBatch = new RecordBatch.Builder()
-            .Append("date", true, dateArray)
+            .Append("date", includeNull, dateArray)
             .Build();
 
         var expectedMask = new List<bool>();
-        expectedMask.Add(false); // For first null
+        if (includeNull)
+        {
+            expectedMask.Add(false);
+        }
+
         foreach (var dateValue in dateValues)
         {
             expectedMask.Add(expectIncluded(dateValue));

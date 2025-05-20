@@ -43,63 +43,72 @@ public class TestTimestampFilter
     }
 
     [Test]
-    public void TestComputeEqMask([Values] TimeUnit unit)
+    public void TestComputeEqMask([Values] TimeUnit unit, [Values] bool includeNull)
     {
         var value = new DateTime(2025, 5, 19, 12, 34, 0);
         var filter = Col.Named("timestamp").IsEqualTo(value);
-        TestComputeComparisonMask(unit, filter, dt => dt == value);
+        TestComputeComparisonMask(unit, filter, dt => dt == value, includeNull);
     }
 
     [Test]
-    public void TestComputeGtMask([Values] TimeUnit unit)
+    public void TestComputeGtMask([Values] TimeUnit unit, [Values] bool includeNull)
     {
         var value = new DateTime(2025, 5, 19, 12, 34, 0);
         var filter = Col.Named("timestamp").IsGreaterThan(value);
-        TestComputeComparisonMask(unit, filter, dt => dt > value);
+        TestComputeComparisonMask(unit, filter, dt => dt > value, includeNull);
     }
 
     [Test]
-    public void TestComputeGtEqMask([Values] TimeUnit unit)
+    public void TestComputeGtEqMask([Values] TimeUnit unit, [Values] bool includeNull)
     {
         var value = new DateTime(2025, 5, 19, 12, 34, 0);
         var filter = Col.Named("timestamp").IsGreaterThanOrEqual(value);
-        TestComputeComparisonMask(unit, filter, dt => dt >= value);
+        TestComputeComparisonMask(unit, filter, dt => dt >= value, includeNull);
     }
 
     [Test]
-    public void TestComputeLtMask([Values] TimeUnit unit)
+    public void TestComputeLtMask([Values] TimeUnit unit, [Values] bool includeNull)
     {
         var value = new DateTime(2025, 5, 19, 12, 34, 0);
         var filter = Col.Named("timestamp").IsLessThan(value);
-        TestComputeComparisonMask(unit, filter, dt => dt < value);
+        TestComputeComparisonMask(unit, filter, dt => dt < value, includeNull);
     }
 
     [Test]
-    public void TestComputeLtEqMask([Values] TimeUnit unit)
+    public void TestComputeLtEqMask([Values] TimeUnit unit, [Values] bool includeNull)
     {
         var value = new DateTime(2025, 5, 19, 12, 34, 0);
         var filter = Col.Named("timestamp").IsLessThanOrEqual(value);
-        TestComputeComparisonMask(unit, filter, dt => dt <= value);
+        TestComputeComparisonMask(unit, filter, dt => dt <= value, includeNull);
     }
 
-    private static void TestComputeComparisonMask(TimeUnit unit, IFilter filter, Func<DateTime, bool> predicate)
+    private static void TestComputeComparisonMask(TimeUnit unit, IFilter filter, Func<DateTime, bool> predicate, bool includeNull)
     {
         var timeValues = Enumerable.Range(0, 100)
             .Select(i => new DateTimeOffset(2025, 5, 19, 12, 0, 0, TimeSpan.Zero).AddMinutes(i))
             .ToArray();
-        var timestampArray = new TimestampArray.Builder(unit)
-            .AppendNull()
+        var timestampArrayBuilder = new TimestampArray.Builder(unit);
+        if (includeNull)
+        {
+            timestampArrayBuilder.AppendNull();
+        }
+
+        var timestampArray = timestampArrayBuilder
             .AppendRange(timeValues)
             .Build();
 
         var recordBatch = new RecordBatch.Builder()
-            .Append("timestamp", true, timestampArray)
+            .Append("timestamp", includeNull, timestampArray)
             .Build();
 
         var mask = filter.ComputeMask(recordBatch);
 
         var expectedMask = new List<bool>();
-        expectedMask.Add(false); // For first null
+        if (includeNull)
+        {
+            expectedMask.Add(false);
+        }
+
         foreach (var value in timeValues)
         {
             expectedMask.Add(predicate(value.DateTime));
