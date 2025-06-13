@@ -15,6 +15,7 @@ internal sealed class TypeComparer
         , IArrowTypeVisitor<FixedSizeListType>
         , IArrowTypeVisitor<IntervalType>
         , IArrowTypeVisitor<ListType>
+        , IArrowTypeVisitor<LargeListType>
         , IArrowTypeVisitor<ListViewType>
         , IArrowTypeVisitor<MapType>
         , IArrowTypeVisitor<StructType>
@@ -61,6 +62,20 @@ internal sealed class TypeComparer
     public void Visit(ListType type)
     {
         if (_expectedType is ListType expectedType)
+        {
+            var valueComparer = new TypeComparer(expectedType.ValueDataType);
+            type.ValueDataType.Accept(valueComparer);
+            TypesMatch = valueComparer.TypesMatch;
+        }
+        else
+        {
+            TypesMatch = false;
+        }
+    }
+
+    public void Visit(LargeListType type)
+    {
+        if (_expectedType is LargeListType expectedType)
         {
             var valueComparer = new TypeComparer(expectedType.ValueDataType);
             type.ValueDataType.Accept(valueComparer);

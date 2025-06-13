@@ -36,6 +36,7 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<NullArray>
     , IArrowArrayVisitor<DictionaryArray>
     , IArrowArrayVisitor<ListArray>
+    , IArrowArrayVisitor<LargeListArray>
     , IArrowArrayVisitor<StructArray>
     , IArrowArrayVisitor<MapArray>
 {
@@ -202,6 +203,54 @@ public class ArrayMaskApplier :
         var arrayData = new ArrayData(array.Data.DataType, _includedCount, validityBuffer.UnsetBitCount, 0,
             new[] { validityBuffer.Build(), valueOffsetsBuilder.Build() }, new[] { valuesArray.Data });
         _maskedArray = arrayConstructor(arrayData);
+    }
+
+    public void Visit(LargeListArray array)
+    {
+        var valuesMaskBuilder = new ArrowBuffer.BitmapBuilder(array.Values.Length);
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+        var valueOffsetsBuilder = new ArrowBuffer.Builder<long>(_includedCount + 1);
+
+        valueOffsetsBuilder.Append(0);
+
+        long outputValuesOffset = 0;
+        var inputValuesOffset = array.ValueOffsets[0];
+        if (inputValuesOffset > 0)
+        {
+            valuesMaskBuilder.AppendRange(false, Convert.ToInt32(inputValuesOffset));
+        }
+
+        for (var i = 0; i < array.Length; ++i)
+        {
+            var included = BitUtility.GetBit(_mask.Span, i);
+            var nextOffset = array.ValueOffsets[i + 1];
+            var length = Convert.ToInt32(nextOffset - inputValuesOffset);
+            if (length > 0)
+            {
+                valuesMaskBuilder.AppendRange(included, length);
+            }
+
+            inputValuesOffset = nextOffset;
+
+            if (included)
+            {
+                validityBuffer.Append(array.IsValid(i));
+                outputValuesOffset += length;
+                valueOffsetsBuilder.Append(outputValuesOffset);
+            }
+        }
+
+        var valuesMaskApplier = new ArrayMaskApplier(valuesMaskBuilder.Build().Memory, valuesMaskBuilder.SetBitCount);
+        array.Values.Accept(valuesMaskApplier);
+        var valuesArray = valuesMaskApplier.MaskedArray;
+
+        _maskedArray = new LargeListArray(
+            array.Data.DataType,
+            _includedCount,
+            valueOffsetsBuilder.Build(),
+            valuesArray,
+            validityBuffer.Build(),
+            validityBuffer.UnsetBitCount);
     }
 
     public void Visit(StructArray array)
