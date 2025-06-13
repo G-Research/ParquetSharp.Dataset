@@ -360,7 +360,7 @@ public class ArrayMaskApplier :
         where TArray : BinaryArray
     {
         var dataBuffer = new ArrowBuffer.Builder<byte>();
-        var valueOffsetsBuffer = new ArrowBuffer.Builder<int>(_includedCount);
+        var valueOffsetsBuffer = new ArrowBuffer.Builder<int>(_includedCount + 1);
         var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
 
         var sourceOffsets = array.ValueOffsets;
@@ -396,7 +396,7 @@ public class ArrayMaskApplier :
         where TArray : LargeBinaryArray
     {
         var dataBuffer = new ArrowBuffer.Builder<byte>();
-        var valueOffsetsBuffer = new ArrowBuffer.Builder<long>(_includedCount);
+        var valueOffsetsBuffer = new ArrowBuffer.Builder<long>(_includedCount + 1);
         var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
 
         var sourceOffsets = array.ValueOffsets;
