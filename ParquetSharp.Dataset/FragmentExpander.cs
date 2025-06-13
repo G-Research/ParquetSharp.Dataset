@@ -99,8 +99,8 @@ internal sealed class FragmentExpander
             ArrowTypeId.Timestamp => new TimestampArray.Builder(),
             ArrowTypeId.Time32 => new Time32Array.Builder(),
             ArrowTypeId.Time64 => new Time64Array.Builder(),
-            ArrowTypeId.Decimal128 => new Decimal128Array.Builder(dataType as Decimal128Type),
-            ArrowTypeId.Decimal256 => new Decimal256Array.Builder(dataType as Decimal256Type),
+            ArrowTypeId.Decimal128 => new Decimal128Array.Builder((dataType as Decimal128Type)!),
+            ArrowTypeId.Decimal256 => new Decimal256Array.Builder((dataType as Decimal256Type)!),
             ArrowTypeId.List => new ListArray.Builder((dataType as ListType)!.ValueDataType),
             ArrowTypeId.Map => new MapArray.Builder(dataType as MapType),
             ArrowTypeId.FixedSizeList => new FixedSizeListArray.Builder(

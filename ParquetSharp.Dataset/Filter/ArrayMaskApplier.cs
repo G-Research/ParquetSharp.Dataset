@@ -31,6 +31,8 @@ public class ArrayMaskApplier :
     , IArrowArrayVisitor<StringArray>
     , IArrowArrayVisitor<BinaryArray>
     , IArrowArrayVisitor<FixedSizeBinaryArray>
+    , IArrowArrayVisitor<LargeStringArray>
+    , IArrowArrayVisitor<LargeBinaryArray>
     , IArrowArrayVisitor<NullArray>
     , IArrowArrayVisitor<DictionaryArray>
     , IArrowArrayVisitor<ListArray>
@@ -108,6 +110,10 @@ public class ArrayMaskApplier :
     public void Visit(FixedSizeBinaryArray array) => VisitFixedSizeBinaryArray<FixedSizeBinaryArray>(array, arrayData => new FixedSizeBinaryArray(arrayData));
 
     public void Visit(BinaryArray array) => VisitBinaryArray<BinaryArray>(array, arrayData => new BinaryArray(arrayData));
+
+    public void Visit(LargeStringArray array) => VisitLargeBinaryArray<LargeStringArray>(array, arrayData => new LargeStringArray(arrayData));
+
+    public void Visit(LargeBinaryArray array) => VisitLargeBinaryArray<LargeBinaryArray>(array, arrayData => new LargeBinaryArray(arrayData));
 
     public void Visit(NullArray array)
     {
@@ -322,6 +328,42 @@ public class ArrayMaskApplier :
                 {
                     var sourceOffset = sourceOffsets[i];
                     var length = sourceOffsets[i + 1] - sourceOffset;
+                    dataBuffer.Append(sourceValues.Slice(sourceOffset, length));
+                    offset += length;
+                }
+
+                validityBuffer.Append(isValid);
+                valueOffsetsBuffer.Append(offset);
+            }
+        }
+
+        var arrayData = new ArrayData(
+            array.Data.DataType, _includedCount, validityBuffer.UnsetBitCount, 0,
+            new[] { validityBuffer.Build(), valueOffsetsBuffer.Build(), dataBuffer.Build() });
+        _maskedArray = arrayConstructor(arrayData);
+    }
+
+    private void VisitLargeBinaryArray<TArray>(TArray array, Func<ArrayData, TArray> arrayConstructor)
+        where TArray : LargeBinaryArray
+    {
+        var dataBuffer = new ArrowBuffer.Builder<byte>();
+        var valueOffsetsBuffer = new ArrowBuffer.Builder<long>(_includedCount);
+        var validityBuffer = new ArrowBuffer.BitmapBuilder(_includedCount);
+
+        var sourceOffsets = array.ValueOffsets;
+        var sourceValues = array.ValueBuffer.Span;
+
+        long offset = 0;
+        valueOffsetsBuffer.Append(0);
+        for (var i = 0; i < array.Length; ++i)
+        {
+            if (BitUtility.GetBit(_mask.Span, i))
+            {
+                var isValid = array.IsValid(i);
+                if (isValid)
+                {
+                    var sourceOffset = Convert.ToInt32(sourceOffsets[i]);
+                    var length = Convert.ToInt32(sourceOffsets[i + 1] - sourceOffset);
                     dataBuffer.Append(sourceValues.Slice(sourceOffset, length));
                     offset += length;
                 }

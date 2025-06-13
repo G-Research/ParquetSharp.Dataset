@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="ParquetSharp" Version="15.0.2.1" />
-    <PackageReference Include="Apache.Arrow" Version="15.0.1" />
+    <PackageReference Include="Apache.Arrow" Version="18.0.0" />
   </ItemGroup>
 
 </Project>

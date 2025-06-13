@@ -164,6 +164,8 @@ public class TestArrayMaskApplier
             BuildArray<BinaryArray, BinaryArray.Builder>(
                 new BinaryArray.Builder(), numRows, random,
                 (builder, rand) => builder.Append(RandomBytes(rand).AsSpan())),
+            BuildLargeBinaryArray(numRows, random),
+            BuildLargeStringArray(numRows, random),
             BuildArray<NullArray, NullArray.Builder>(
                 new NullArray.Builder(), numRows, random,
                 (builder, _) => builder.AppendNull()),
@@ -360,6 +362,51 @@ public class TestArrayMaskApplier
         return builder.Build();
     }
 
+    private static IArrowArray BuildLargeStringArray(int numRows, Random random)
+    {
+        var (offsetBuffer, valueBuffer, validityBuffer, validCount) = GetLargeStringArrayData(numRows, random);
+        return new LargeStringArray(numRows, offsetBuffer, valueBuffer, validityBuffer, validCount);
+    }
+
+    private static IArrowArray BuildLargeBinaryArray(int numRows, Random random)
+    {
+        var (offsetBuffer, valueBuffer, validityBuffer, validCount) = GetLargeStringArrayData(numRows, random);
+        return new LargeBinaryArray(LargeBinaryType.Default, numRows, offsetBuffer, valueBuffer, validityBuffer, validCount);
+    }
+
+    private static (ArrowBuffer, ArrowBuffer, ArrowBuffer, int) GetLargeStringArrayData(int numRows, Random random)
+    {
+        var valueBuffer = new ArrowBuffer.Builder<byte>();
+        var offsetBuffer = new ArrowBuffer.Builder<long>();
+        var validityBuffer = new ArrowBuffer.BitmapBuilder();
+
+        var stringValues = new[] { "Hello", "world", "abc", "123", "", "4567890" };
+        var byteValues = stringValues
+            .Select(value => LargeStringArray.DefaultEncoding.GetBytes(value))
+            .ToArray();
+
+        long offset = 0;
+        offsetBuffer.Append(offset);
+        for (var rowIdx = 0; rowIdx < numRows; ++rowIdx)
+        {
+            if (random.NextDouble() < 0.1)
+            {
+                validityBuffer.Append(false);
+                offsetBuffer.Append(offset);
+            }
+            else
+            {
+                var bytes = byteValues[random.Next(byteValues.Length)];
+                valueBuffer.Append(bytes);
+                offset += bytes.Length;
+                offsetBuffer.Append(offset);
+                validityBuffer.Append(true);
+            }
+        }
+
+        return (offsetBuffer.Build(), valueBuffer.Build(), validityBuffer.Build(), validityBuffer.UnsetBitCount);
+    }
+
     private sealed class MaskedArrayValidator : IArrowArrayVisitor
         , IArrowArrayVisitor<UInt8Array>
         , IArrowArrayVisitor<UInt16Array>
@@ -382,6 +429,8 @@ public class TestArrayMaskApplier
         , IArrowArrayVisitor<Decimal256Array>
         , IArrowArrayVisitor<StringArray>
         , IArrowArrayVisitor<BinaryArray>
+        , IArrowArrayVisitor<LargeStringArray>
+        , IArrowArrayVisitor<LargeBinaryArray>
         , IArrowArrayVisitor<NullArray>
         , IArrowArrayVisitor<DictionaryArray>
         , IArrowArrayVisitor<ListArray>
@@ -435,6 +484,10 @@ public class TestArrayMaskApplier
         public void Visit(StringArray array) => VisitArray(array, (arr, idx) => arr.GetString(idx));
 
         public void Visit(BinaryArray array) => VisitArray(array, (arr, idx) => arr.GetBytes(idx).ToArray());
+
+        public void Visit(LargeStringArray array) => VisitArray(array, (arr, idx) => arr.GetString(idx));
+
+        public void Visit(LargeBinaryArray array) => VisitArray(array, (arr, idx) => arr.GetBytes(idx).ToArray());
 
         public void Visit(NullArray array) => VisitArray(array, (_, _) => (object?)null);
 
