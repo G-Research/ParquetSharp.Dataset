@@ -85,7 +85,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         dotnet: [net8.0, net9.0]
-        arrow: [15.0.1]
+        arrow: [18.0.0]
         include:
           - os: ubuntu-latest
             dotnet: net8.0
@@ -93,6 +93,9 @@ jobs:
           - os: ubuntu-latest
             dotnet: net8.0
             arrow: 19.0.1
+          - os: ubuntu-latest
+            dotnet: net8.0
+            arrow: 20.0.0
       fail-fast: false
     name: Test NuGet package (.NET ${{ matrix.dotnet }} on ${{ matrix.os }} with Arrow ${{ matrix.arrow }})
     runs-on: ${{ matrix.os }}
