@@ -7,7 +7,10 @@ namespace ParquetSharp.Dataset.Filter;
 /// <summary>
 /// Tests whether an array contains a single string within a set of specified values
 /// </summary>
-internal sealed class StringInSetEvaluator : BaseFilterEvaluator, IArrowArrayVisitor<StringArray>
+internal sealed class StringInSetEvaluator :
+    BaseFilterEvaluator
+    , IArrowArrayVisitor<StringArray>
+    , IArrowArrayVisitor<LargeStringArray>
 {
     public StringInSetEvaluator(IReadOnlyCollection<string?> values, string columnName)
     {
@@ -16,6 +19,17 @@ internal sealed class StringInSetEvaluator : BaseFilterEvaluator, IArrowArrayVis
     }
 
     public void Visit(StringArray array)
+    {
+        BuildMask(array, (mask, inputArray) =>
+        {
+            for (var i = 0; i < inputArray.Length; ++i)
+            {
+                BitUtility.SetBit(mask, i, _allowedValues.Contains(array.GetString(i)));
+            }
+        });
+    }
+
+    public void Visit(LargeStringArray array)
     {
         BuildMask(array, (mask, inputArray) =>
         {
