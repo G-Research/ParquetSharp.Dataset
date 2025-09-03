@@ -165,7 +165,7 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
     {
         foreach (var prefix in _options.IgnorePrefixes)
         {
-            if (fileName.StartsWith(prefix))
+            if (fileName.StartsWith(prefix, StringComparison.Ordinal))
             {
                 return true;
             }
