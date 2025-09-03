@@ -965,6 +965,99 @@ public class TestDatasetReader
         }
     }
 
+    [Test]
+    public async Task TestSkipIgnoredFilesWithPartitioning()
+    {
+        using var tmpDir = new DisposableDirectory();
+        var paths = new[]
+        {
+            "part=a/data.parquet",
+            "part=a/.data.parquet",
+            "part=b/data.parquet",
+            "part=b/_data.parquet",
+            "part=a/.tmp/data.parquet",
+            ".abc=0/data.parquet",
+            "_data.parquet",
+            ".tmp/data.parquet",
+            "_tmp/data.parquet",
+        };
+        var batchIdx = 0;
+        foreach (var path in paths)
+        {
+            using var batch = GenerateBatch(batchIdx);
+            WriteParquetFile(tmpDir.AbsPath(path), batch);
+            batchIdx++;
+        }
+
+        var partitioningFactory = new HivePartitioning.Factory();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            partitioningFactory);
+        using var reader = dataset.ToBatches();
+        await VerifyData(
+            reader,
+            new Dictionary<int, int> { { 0, 10 }, { 2, 10 } },
+            new Dictionary<string, int> { { "a", 10 }, { "b", 10 } });
+
+        var datasetSchema = dataset.Schema;
+        var expectedSchema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("part", new StringType(), true))
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        Assert.That(datasetSchema.FieldsList.Count, Is.EqualTo(expectedSchema.FieldsList.Count));
+        foreach (var (datasetField, expectedField) in datasetSchema.FieldsList.Zip(expectedSchema.FieldsList))
+        {
+            Assert.That(datasetField.ToString(), Is.EqualTo(expectedField.ToString()));
+        }
+    }
+
+    [Test]
+    public async Task TestSkipCustomIgnoredFiles()
+    {
+        var options = new DatasetOptions
+        {
+            IgnorePrefixes = ["tmp.", "."]
+        };
+        using var tmpDir = new DisposableDirectory();
+        var paths = new[]
+        {
+            "data.parquet",
+            "_data.parquet",
+            "subdir/data.parquet",
+            "_subdir/data.parquet",
+            ".data.parquet",
+            "tmp.data.parquet",
+            "tmp.dir/data.parquet",
+        };
+        var batchIdx = 0;
+        foreach (var path in paths)
+        {
+            using var batch = GenerateBatch(batchIdx);
+            WriteParquetFile(tmpDir.AbsPath(path), batch);
+            batchIdx++;
+        }
+
+        var schema = new Apache.Arrow.Schema.Builder()
+            .Field(new Field("id", new Int32Type(), false))
+            .Field(new Field("x", new FloatType(), false))
+            .Build();
+        var dataset = new DatasetReader(
+            tmpDir.DirectoryPath,
+            new NoPartitioning(),
+            schema: schema,
+            options: options);
+        using var reader = dataset.ToBatches();
+        await VerifyData(
+            reader, new Dictionary<int, int>
+            {
+                { 0, 10 },
+                { 1, 10 },
+                { 2, 10 },
+                { 3, 10 }
+            });
+    }
+
     private static async Task VerifyData(
         IArrowArrayStream arrayStream,
         Dictionary<int, int> expectedRowCountsById,

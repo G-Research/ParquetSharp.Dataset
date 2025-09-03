@@ -22,32 +22,46 @@ public sealed class DatasetReader
     /// If not provided it will be inferred from the partitioning and data file schema</param>
     /// <param name="readerProperties">Optional Parquet reader properties</param>
     /// <param name="arrowReaderProperties">Optional Parquet Arrow reader properties</param>
+    /// <param name="options">Dataset reading options</param>
     public DatasetReader(
         string directory,
         IPartitioningFactory? partitioningFactory = null,
         Apache.Arrow.Schema? schema = null,
         ReaderProperties? readerProperties = null,
-        ArrowReaderProperties? arrowReaderProperties = null)
+        ArrowReaderProperties? arrowReaderProperties = null,
+        DatasetOptions? options = null)
     {
         _directory = directory ?? throw new ArgumentNullException(nameof(directory));
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
+        _options = options ?? DatasetOptions.Default;
 
         partitioningFactory ??= new NoPartitioning.Factory();
         if (schema == null)
         {
             // Infer both schema and partitioning
             var dataFileSchemaBuilder = new DataFileSchemaBuilder(_readerProperties, _arrowReaderProperties);
-            InspectTree(_directory, partitioningFactory, dataFileSchemaBuilder);
+            InspectTree(_directory, _options, partitioningFactory, dataFileSchemaBuilder);
             Partitioning = partitioningFactory.Build();
             Schema = MergeSchemas(Partitioning.Schema, dataFileSchemaBuilder.Build());
         }
         else
         {
             Schema = schema;
-            InspectTree(_directory, partitioningFactory, null);
+            InspectTree(_directory, _options, partitioningFactory, null);
             Partitioning = partitioningFactory.Build(schema);
         }
+    }
+
+    // 0.3.1 Backwards compatibility overload
+    public DatasetReader(
+        string directory,
+        IPartitioningFactory? partitioningFactory,
+        Apache.Arrow.Schema? schema,
+        ReaderProperties? readerProperties,
+        ArrowReaderProperties? arrowReaderProperties)
+        : this(directory, partitioningFactory, schema, readerProperties, arrowReaderProperties, null)
+    {
     }
 
     /// <summary>
@@ -59,22 +73,25 @@ public sealed class DatasetReader
     /// If not provided it will be inferred from the partitioning and data file schema</param>
     /// <param name="readerProperties">Optional Parquet reader properties</param>
     /// <param name="arrowReaderProperties">Optional Parquet Arrow reader properties</param>
+    /// <param name="options">Dataset reading options</param>
     public DatasetReader(
         string directory,
         IPartitioning partitioning,
         Apache.Arrow.Schema? schema = null,
         ReaderProperties? readerProperties = null,
-        ArrowReaderProperties? arrowReaderProperties = null)
+        ArrowReaderProperties? arrowReaderProperties = null,
+        DatasetOptions? options = null)
     {
         _directory = directory ?? throw new ArgumentNullException(nameof(directory));
         Partitioning = partitioning ?? throw new ArgumentNullException(nameof(partitioning));
         _readerProperties = readerProperties;
         _arrowReaderProperties = arrowReaderProperties;
+        _options = options ?? DatasetOptions.Default;
 
         if (schema == null)
         {
             var dataFileSchemaBuilder = new DataFileSchemaBuilder(_readerProperties, _arrowReaderProperties);
-            InspectTree(_directory, null, dataFileSchemaBuilder);
+            InspectTree(_directory, _options, null, dataFileSchemaBuilder);
             Schema = MergeSchemas(partitioning.Schema, dataFileSchemaBuilder.Build());
         }
         else
@@ -82,6 +99,17 @@ public sealed class DatasetReader
             ValidatePartitionSchema(partitioning.Schema, schema);
             Schema = schema;
         }
+    }
+
+    // 0.3.1 Backwards compatibility overload
+    public DatasetReader(
+        string directory,
+        IPartitioning partitioning,
+        Apache.Arrow.Schema? schema,
+        ReaderProperties? readerProperties,
+        ArrowReaderProperties? arrowReaderProperties)
+        : this(directory, partitioning, schema, readerProperties, arrowReaderProperties, null)
+    {
     }
 
     /// <summary>
@@ -195,11 +223,12 @@ public sealed class DatasetReader
         }
 
         return new DatasetStreamReader(
-            _directory, schema, Partitioning, filter, _readerProperties, _arrowReaderProperties);
+            _directory, schema, Partitioning, _options, filter, _readerProperties, _arrowReaderProperties);
     }
 
     private static void InspectTree(
         string directory,
+        DatasetOptions options,
         IPartitioningFactory? partitioningFactory,
         DataFileSchemaBuilder? dataSchemaBuilder)
     {
@@ -208,7 +237,7 @@ public sealed class DatasetReader
         // or data files have different fields? May also need this for handling nullable partition
         // fields if the first path contains a null.
         // May want to use multiple paths for partitioning but only one for data files?
-        var fragmentEnumerator = new FragmentEnumerator(directory, new NoPartitioning(), filter: null);
+        var fragmentEnumerator = new FragmentEnumerator(directory, new NoPartitioning(), options, filter: null);
         if (fragmentEnumerator.MoveNext())
         {
             partitioningFactory?.Inspect(fragmentEnumerator.Current.PartitionPath);
@@ -271,4 +300,5 @@ public sealed class DatasetReader
     private readonly string _directory;
     private readonly ReaderProperties? _readerProperties;
     private readonly ArrowReaderProperties? _arrowReaderProperties;
+    private readonly DatasetOptions _options;
 }

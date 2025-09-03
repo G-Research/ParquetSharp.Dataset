@@ -5,7 +5,7 @@
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <VersionPrefix>0.3.1</VersionPrefix>
+    <VersionPrefix>0.4.0</VersionPrefix>
     <Company>G-Research</Company>
     <Authors>G-Research</Authors>
     <Product>ParquetSharp.Dataset</Product>
