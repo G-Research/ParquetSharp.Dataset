@@ -15,7 +15,7 @@ public class TestFragmentEnumerator
     public void TestEmptyDirectory()
     {
         using var tmpDir = new DisposableDirectory();
-        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning());
+        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning(), DatasetOptions.Default);
 
         var fragments = GetAllFragments(enumerator);
 
@@ -31,7 +31,7 @@ public class TestFragmentEnumerator
             "a/b/c.txt",
             "d/e.txt",
         });
-        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning());
+        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning(), DatasetOptions.Default);
 
         var fragments = GetAllFragments(enumerator);
 
@@ -55,7 +55,7 @@ public class TestFragmentEnumerator
             Path.Join("data.txt"),
         };
         tmpDir.CreateTree(paths);
-        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning());
+        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning(), DatasetOptions.Default);
 
         var fragments = GetAllFragments(enumerator);
 
@@ -92,7 +92,7 @@ public class TestFragmentEnumerator
             .Build();
         var partitioning = new HivePartitioning(partitioningSchema);
 
-        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, partitioning);
+        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, partitioning, DatasetOptions.Default);
 
         var fragments = GetAllFragments(enumerator);
 
@@ -142,7 +142,7 @@ public class TestFragmentEnumerator
             .And(Col.Named("y").IsEqualTo(1))
             .And(Col.Named("z").IsEqualTo("abc"));
 
-        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, partitioning, filter);
+        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, partitioning, DatasetOptions.Default, filter);
 
         var fragments = GetAllFragments(enumerator);
 
@@ -166,6 +166,39 @@ public class TestFragmentEnumerator
             Assert.That(yArray, Is.Not.Null);
             Assert.That(yArray!.GetValue(0), Is.EqualTo(expected.Y));
         }
+    }
+
+    [Test]
+    public void TestIgnorePatterns()
+    {
+        using var tmpDir = new DisposableDirectory();
+        var paths = new[]
+        {
+            Path.Join("data.parquet"),
+            Path.Join("data_0.parquet"),
+            Path.Join(".data.parquet"),
+            Path.Join("_data.parquet"),
+            Path.Join("subdir", "data.parquet"),
+            Path.Join("subdir", ".data.parquet"),
+            Path.Join("_metadata", "data.parquet"),
+            Path.Join(".DS_STORE", "data.parquet"),
+            Path.Join("subdir", ".DS_STORE", "data.parquet"),
+        };
+        tmpDir.CreateTree(paths);
+
+        var expectedPaths = new[]
+        {
+            Path.Join("data.parquet"),
+            Path.Join("data_0.parquet"),
+            Path.Join("subdir", "data.parquet"),
+        }.Select(p => Path.Join(tmpDir.DirectoryPath, p)).ToArray();
+
+        var enumerator = new FragmentEnumerator(tmpDir.DirectoryPath, new NoPartitioning(), DatasetOptions.Default);
+
+        var fragments = GetAllFragments(enumerator);
+
+        var filePaths = fragments.Select(f => f.FilePath).ToArray();
+        Assert.That(filePaths, Is.EquivalentTo(expectedPaths));
     }
 
     private static IReadOnlyList<PartitionFragment> GetAllFragments(FragmentEnumerator enumerator)

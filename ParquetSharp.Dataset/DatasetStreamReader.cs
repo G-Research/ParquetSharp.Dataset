@@ -16,12 +16,13 @@ internal sealed class DatasetStreamReader : IArrowArrayStream
         string directory,
         Apache.Arrow.Schema schema,
         IPartitioning partitioning,
+        DatasetOptions options,
         IFilter? filter = null,
         ReaderProperties? readerProperties = null,
         ArrowReaderProperties? arrowReaderProperties = null)
     {
         Schema = schema;
-        _fragmentEnumerator = new FragmentEnumerator(directory, partitioning, filter);
+        _fragmentEnumerator = new FragmentEnumerator(directory, partitioning, options, filter);
         _fragmentExpander = new FragmentExpander(schema);
         _filter = filter;
         _readerProperties = readerProperties;

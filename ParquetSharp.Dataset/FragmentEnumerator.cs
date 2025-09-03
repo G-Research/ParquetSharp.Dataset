@@ -47,11 +47,13 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
     public FragmentEnumerator(
         string directory,
         IPartitioning partitioning,
+        DatasetOptions options,
         IFilter? filter = null)
     {
         _rootDirectory = directory;
         _filter = filter;
         _partitioning = partitioning;
+        _options = options;
         _directoryQueue = new Queue<string[]>();
         _directoryQueue.Enqueue(Array.Empty<string>());
         _fileQueue = new Queue<string>();
@@ -131,12 +133,17 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
     {
     }
 
-    private static DirectoryListing ListDirectory(DirectoryInfo directory)
+    private DirectoryListing ListDirectory(DirectoryInfo directory)
     {
         var directories = new List<string>();
         var files = new List<string>();
         foreach (var fsi in directory.GetFileSystemInfos())
         {
+            if (IgnoreFile(fsi.Name))
+            {
+                continue;
+            }
+
             if ((fsi.Attributes & FileAttributes.Directory) == FileAttributes.Directory)
             {
                 directories.Add(fsi.Name);
@@ -154,8 +161,22 @@ internal sealed class FragmentEnumerator : IEnumerator<PartitionFragment>
         };
     }
 
+    private bool IgnoreFile(string fileName)
+    {
+        foreach (var prefix in _options.IgnorePrefixes)
+        {
+            if (fileName.StartsWith(prefix))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private readonly IFilter? _filter;
     private readonly IPartitioning _partitioning;
+    private readonly DatasetOptions _options;
     private readonly string _rootDirectory;
     private readonly Queue<string[]> _directoryQueue;
     private readonly Queue<string> _fileQueue;
