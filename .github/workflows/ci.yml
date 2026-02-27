@@ -74,7 +74,7 @@ jobs:
     - name: Build NuGet package
       run: dotnet pack ParquetSharp.Dataset --configuration=Release --no-build --output nuget --version-suffix "${{ steps.get-version.outputs.version_suffix }}"
     - name: Upload NuGet artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: nuget-package
         path: nuget
