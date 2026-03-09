@@ -150,6 +150,7 @@ jobs:
     name: Publish release
     runs-on: ubuntu-latest
     needs: [build-nuget, all-required-checks-done]
+    environment: release
     steps:
     - name: Checkout
       uses: actions/checkout@v6
@@ -180,5 +181,15 @@ jobs:
           nuget/ParquetSharp.Dataset.${{ needs.build-nuget.outputs.version }}.nupkg
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Publish to NuGet
-      run: dotnet nuget push nuget/ParquetSharp.Dataset.${{ needs.build-nuget.outputs.version }}.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+    - name: Obtain NuGet key
+      # this hash is v1.1.0
+      uses: NuGet/login@d22cc5f58ff5b88bf9bd452535b4335137e24544
+      id: login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    - name: Publish NuGet package
+      uses: G-Research/common-actions/publish-nuget@main
+      with:
+        package-name: ParquetSharp.Dataset
+        nuget-key: ${{ steps.login.outputs.NUGET_API_KEY }}
+        nupkg-dir: nuget
