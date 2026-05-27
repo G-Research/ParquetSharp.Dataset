@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
         with:
           dotnet-version: 9.0.x
       - name: Code formating check
@@ -49,9 +49,9 @@ jobs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
       with:
         dotnet-version: 8.0.x
     - name: Get version
@@ -74,7 +74,7 @@ jobs:
     - name: Build NuGet package
       run: dotnet pack ParquetSharp.Dataset --configuration=Release --no-build --output nuget --version-suffix "${{ steps.get-version.outputs.version_suffix }}"
     - name: Upload NuGet artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         name: nuget-package
         path: nuget
@@ -102,19 +102,19 @@ jobs:
     needs: build-nuget
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     - name: Download NuGet artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: nuget-package
         path: nuget
     - name: Setup .NET 8 SDK
       if: matrix.dotnet == 'net8.0'
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
       with:
         dotnet-version: 8.0.x
     - name: Setup .NET 9 SDK
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
       with:
         dotnet-version: 9.0.x
     - name: Add local NuGet feed
@@ -156,7 +156,7 @@ jobs:
       contents: read
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
     - name: Check version
       id: check-version
       shell: pwsh
@@ -168,14 +168,14 @@ jobs:
           exit 1
         }
     - name: Download NuGet artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: nuget-package
         path: nuget
     # if version contains "-" treat it as pre-release
     # example: 1.0.0-beta1
     - name: Create release
-      uses: softprops/action-gh-release@v3
+      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
       with:
         name: ParquetSharp.Dataset ${{ needs.build-nuget.outputs.version }}
         draft: true
